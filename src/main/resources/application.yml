@@ -3,7 +3,7 @@
 # =========================
 spring:
   application:
-    name: lovechedule-api
+    name: weave-api
   main:
     banner-mode: "console"
   threads:
@@ -38,14 +38,14 @@ server:
   compression:
     enabled: true
     min-response-size: 2KB
-  forward-headers-strategy: framework   # 프록시/로드밸런서 뒤에서 Host/Proto 보존
+  forward-headers-strategy: framework # 프록시/로드밸런서 뒤에서 Host/Proto 보존
 
 # =========================
 # 보안/JWT 예시 (값은 환경변수로 주입 권장)
 # =========================
 security:
   jwt:
-    issuer: lovechedule
+    issuer: weave
     access-token-ttl-minutes: 60
     # 실제 비밀키는 환경변수로: SECURITY_JWT_SECRET
     # application.yml에는 적지 마세요
@@ -56,7 +56,7 @@ security:
 # =========================
 feign:
   httpclient:
-    enabled: true           # feign-httpclient 모듈 사용
+    enabled: true # feign-httpclient 모듈 사용
     max-connections: 200
     max-connections-per-route: 50
   client:
@@ -64,7 +64,7 @@ feign:
       default:
         connectTimeout: 3000
         readTimeout: 5000
-        loggerLevel: BASIC   # NONE/BASIC/HEADERS/FULL
+        loggerLevel: BASIC # NONE/BASIC/HEADERS/FULL
         decode404: true
   compression:
     request:
@@ -151,7 +151,7 @@ spring:
       on-profile: prod
   data:
     mongodb:
-      uri: ${MONGODB_URI}   # 예: mongodb+srv://...  환경변수로 주입
+      uri: ${MONGODB_URI} # 예: mongodb+srv://...  환경변수로 주입
 server:
   port: ${PORT:8080}
 logging:
