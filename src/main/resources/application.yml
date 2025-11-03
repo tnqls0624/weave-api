@@ -18,7 +18,7 @@ spring:
   data:
     mongodb:
       uri: mongodb://root:1234@localhost:27017/lovechedule?authSource=admin
-      auto-index-creation: true
+      auto-index-creation: false
 
   mvc:
     problemdetails:

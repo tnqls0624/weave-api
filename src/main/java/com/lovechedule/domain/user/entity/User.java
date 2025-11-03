@@ -1,13 +1,13 @@
-package com.lovechedule.domain.auth.entity;// User.java
+package com.lovechedule.domain.user.entity;// User.java
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
+import org.bson.types.ObjectId;
 import org.springframework.data.annotation.*;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.*;
 
-import java.time.Instant;
 import java.util.Date;
 
 @Document(collection = "users")
@@ -16,10 +16,11 @@ import java.util.Date;
 public class User {
 
     @Id
-    private String id;
+    private ObjectId id;
 
+    @Field("login_type")
     @NotBlank
-    private String login_type;
+    private String loginType;
 
     @NotBlank
     @Email
@@ -36,23 +37,29 @@ public class User {
 
     private String birthday;     // optional(문자열로 동일 대응)
 
+    @Field("invite_code")
     @NotBlank
-    @Indexed                         // index: true
-    private String invite_code;
+    @Indexed(unique = true)
+    private String inviteCode;
 
-    private String thumbnail_image;
+    @Field("thumbnail_image")
+    private String thumbnailImage;
 
-    @Indexed                         // index: true
+    @Field("fcm_token")
+    @Indexed(unique = true)
     private String fcmToken;
 
+    @Field("push_enabled")
     @Builder.Default
-    private boolean push_enabled = true;
+    private boolean pushEnabled = true;
 
+    @Field("schedule_alarm")
     @Builder.Default
-    private boolean schedule_alarm = true;
+    private boolean scheduleAlarm = true;
 
+    @Field("anniversary_alarm")
     @Builder.Default
-    private boolean anniversary_alarm = true;
+    private boolean anniversaryAlarm = true;
 
     @CreatedDate
     private Date createdAt;

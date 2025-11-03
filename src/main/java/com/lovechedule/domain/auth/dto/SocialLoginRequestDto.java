@@ -9,13 +9,13 @@ import lombok.Setter;
 @Setter
 public class SocialLoginRequestDto {
 
-    @NotBlank(message = "socialType은 필수입니다.")
+    @NotBlank(message = "login_type 필수입니다.")
     @Pattern(
             regexp = "KAKAO|GOOGLE|NAVER|FACEBOOK|APPLE",
             message = "허용되지 않은 로그인 타입입니다. (KAKAO, GOOGLE, NAVER, FACEBOOK, APPLE 중 하나여야 합니다.)"
     )
     private String loginType;
 
-    @NotBlank(message = "accessToken은 필수입니다.")
+    @NotBlank(message = "access_token은 필수입니다.")
     private String accessToken;
 }

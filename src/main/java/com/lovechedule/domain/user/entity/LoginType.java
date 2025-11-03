@@ -1,4 +1,4 @@
-package com.lovechedule.domain.auth.entity;
+package com.lovechedule.domain.user.entity;
 
 public enum LoginType {
     KAKAO,

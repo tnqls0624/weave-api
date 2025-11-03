@@ -1,15 +1,34 @@
 package com.lovechedule.domain.auth.dto;
 
-import lombok.Getter;
-import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class KakaoUserResponseDto {
 
-    private String email;
-    private String name;
-    private String gender;
-    private String birthday;
-    private String thumbnail_image;
+    private Long id;
+    private String connectedAt;
+    private KakaoAccount kakaoAccount;
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class KakaoAccount {
+        private String email;
+        private String gender;
+        private String birthday;
+        private Profile profile;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class Profile {
+        private String nickname;
+        private String thumbnailImageUrl;
+    }
 }

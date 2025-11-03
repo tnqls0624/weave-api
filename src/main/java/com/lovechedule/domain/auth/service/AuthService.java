@@ -1,9 +1,11 @@
 package com.lovechedule.domain.auth.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.lovechedule.domain.auth.dto.*;
-import com.lovechedule.domain.auth.entity.User;
+import com.lovechedule.domain.user.dto.UserResponseDto;
+import com.lovechedule.domain.user.entity.User;
 import com.lovechedule.domain.auth.jwt.JwtTokenProvider;
-import com.lovechedule.domain.auth.repository.UserRepository;
+import com.lovechedule.domain.auth.repository.AuthRepository;
 import com.lovechedule.global.BusinessException;
 import com.lovechedule.global.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -13,27 +15,29 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.reactive.function.client.WebClient;
 import java.security.SecureRandom;
+import java.util.Optional;
 
-import com.lovechedule.domain.auth.entity.LoginType;
+import com.lovechedule.domain.user.entity.LoginType;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Slf4j
-@Service
 @RequiredArgsConstructor
+@Service
 public class AuthService {
 
-    private final UserRepository userRepository;
+    private final AuthRepository authRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final WebClient webClient;
+    private final ObjectMapper objectMapper;
 
     // 이메일 로그인
-    public LoginResponseDto login(LoginRequestDto loginRequestDto) {
-        User user = userRepository.findByEmail(loginRequestDto.getEmail())
+    public LoginResponseDto login(LoginRequestDto dto) {
+        User user = authRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_LOGIN));
 
-        if (!passwordEncoder.matches(loginRequestDto.getPassword(), user.getPassword())) {
+        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new BusinessException(ErrorCode.PASSWORD_MISMATCH);
         }
 
@@ -89,24 +93,63 @@ public class AuthService {
                 .bodyToMono(KakaoUserResponseDto.class)
                 .block();
 
-        if (kakao == null || kakao.getEmail() == null) {
+        if (kakao == null || kakao.getKakaoAccount() == null) {
             throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED, "카카오 계정 정보를 확인할 수 없습니다.");
         }
 
-        String email = kakao.getEmail();
+        var account = kakao.getKakaoAccount();
+        var profile  = account.getProfile();
 
-        return userRepository.findByEmail(email)
-                .orElseGet(() -> userRepository.save(User.builder()
-                        .email(email)
-                        .name(kakao.getName() != null ? kakao.getName() : email)
-                        .login_type(dto.getLoginType())
-                        .invite_code(inviteCode)
-                        .gender(kakao.getGender() != null ? kakao.getGender() : null)
-                        .birthday(kakao.getBirthday() != null ? kakao.getBirthday() : null)
-                        .build()));
+        String email    = account.getEmail();
+        String nickname = profile.getNickname();
+
+        String gender   = account.getGender();
+        String birthday = account.getBirthday();
+        String thumbnailImage = profile.getThumbnailImageUrl();
+
+        return authRepository.findByEmail(email)
+                .orElseGet(() ->
+                        authRepository.save(
+                                User.builder()
+                                        .email(email)
+                                        .name(nickname)
+                                        .loginType(dto.getLoginType())
+                                        .inviteCode(inviteCode)
+                                        .gender(gender)
+                                        .birthday(birthday)
+                                        .anniversaryAlarm(true)
+                                        .scheduleAlarm(true)
+                                        .pushEnabled(true)
+                                        .thumbnailImage(thumbnailImage)
+                                        .build()
+                        )
+                );
     }
 
     // 개인 정보 수정
-    public void updateUserInfo(UpdateUserRequestDto updateUserRequestDto) {
+    public UserResponseDto updateUserInfo(UpdateUserRequestDto dto, String email) {
+        User user = authRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        user.setName(dto.getName());
+        user.setFcmToken(dto.getFcmToken());
+        user.setPushEnabled(dto.isPushEnabled());
+        user.setAnniversaryAlarm(dto.isAnniversaryAlarm());
+        user.setScheduleAlarm(dto.isScheduleAlarm());
+        authRepository.save(user);
+
+        return UserResponseDto.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .name(user.getName())
+                .loginType(user.getLoginType())
+                .inviteCode(user.getInviteCode())
+                .gender(user.getGender())
+                .birthday(user.getBirthday())
+                .fcmToken(user.getFcmToken())
+                .pushEnabled(user.isPushEnabled())
+                .anniversaryAlarm(user.isAnniversaryAlarm())
+                .scheduleAlarm(user.isScheduleAlarm())
+                .thumbnailImage(user.getThumbnailImage())
+                .build();
     }
 }

@@ -1,7 +1,7 @@
 package com.lovechedule.domain.auth.service;
 
-import com.lovechedule.domain.auth.entity.User;
-import com.lovechedule.domain.auth.repository.UserRepository;
+import com.lovechedule.domain.user.entity.User;
+import com.lovechedule.domain.auth.repository.AuthRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -15,11 +15,11 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class UserDetailService implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final AuthRepository authRepository;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
+        User user = authRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
         return new org.springframework.security.core.userdetails.User(
