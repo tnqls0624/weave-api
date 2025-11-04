@@ -11,8 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 import java.util.Date;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

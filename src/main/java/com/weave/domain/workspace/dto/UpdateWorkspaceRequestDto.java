@@ -22,19 +22,6 @@ public class UpdateWorkspaceRequestDto {
     private List<String> users;
 
     @Schema(
-            example = """
-        {
-          "anniversary": { "color": "#FF0000" },
-          "together": { "color": "#00FF00" },
-          "guest": { "color": "#0000FF" },
-          "master": { "color": "#FF00FF" }
-        }
-        """,
-            description = "태그"
-    )
-    private Workspace.Tag tags;
-
-    @Schema(
             example = "http://test.com/image",
             description = "썸네일 이미지"
     )

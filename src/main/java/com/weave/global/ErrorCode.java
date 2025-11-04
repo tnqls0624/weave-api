@@ -29,7 +29,8 @@ public enum ErrorCode {
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "C001", "Validation failed"),
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "C002", "Bad request"),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S001", "Internal server error"),
-    WORKSPACE_NOT_FOUND(HttpStatus.BAD_REQUEST, "C003", "Workspace not found" );
+    WORKSPACE_NOT_FOUND(HttpStatus.BAD_REQUEST, "C003", "Workspace not found" ),
+    SCHEDULE_NOT_FOUND(HttpStatus.BAD_REQUEST, "C004" , "Schedule not found" ),;
 
     private final HttpStatus httpStatus;
     private final String code;

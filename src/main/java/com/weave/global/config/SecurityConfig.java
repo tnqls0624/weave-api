@@ -34,12 +34,13 @@ public class SecurityConfig {
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
+                                "/",
                                 "/api/auth/login",
                                 "/api/auth/social-login",
-                                "api/user/invite/**",
-                                "/swagger-ui/**",
-//                                "/v1/api/docs/**",
+                                "/api/user/invite/**",
+                                "/swagger/**",
                                 "/v3/api-docs/**",
+                                "swagger-ui/**",
                                 "/health").permitAll() // 로그인, 회원가입 등은 허용
                         .anyRequest().authenticated()
                 ).addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),

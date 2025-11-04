@@ -1,6 +1,5 @@
 package com.weave.domain.auth.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weave.domain.auth.dto.*;
 import com.weave.domain.auth.jwt.JwtTokenProvider;
 import com.weave.domain.auth.repository.AuthRepository;
@@ -17,7 +16,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.reactive.function.client.WebClient;
 import java.security.SecureRandom;
-import java.util.Optional;
 
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -31,7 +29,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final WebClient webClient;
-    private final ObjectMapper objectMapper;
 
     // 이메일 로그인
     public LoginResponseDto login(LoginRequestDto dto) {
@@ -128,7 +125,7 @@ public class AuthService {
     }
 
     // 개인 정보 수정
-    public UserResponseDto updateUserInfo(UpdateUserRequestDto dto, String email) {
+    public UserResponseDto update(UpdateUserRequestDto dto, String email) {
         User user = authRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         user.setName(dto.getName());
@@ -138,19 +135,12 @@ public class AuthService {
         user.setScheduleAlarm(dto.isScheduleAlarm());
         authRepository.save(user);
 
-        return UserResponseDto.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .name(user.getName())
-                .loginType(user.getLoginType())
-                .inviteCode(user.getInviteCode())
-                .gender(user.getGender())
-                .birthday(user.getBirthday())
-                .fcmToken(user.getFcmToken())
-                .pushEnabled(user.isPushEnabled())
-                .anniversaryAlarm(user.isAnniversaryAlarm())
-                .scheduleAlarm(user.isScheduleAlarm())
-                .thumbnailImage(user.getThumbnailImage())
-                .build();
+        return UserResponseDto.from(user);
+    }
+
+    public UserResponseDto findByEmail(String email) {
+        User user = authRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        return UserResponseDto.from(user);
     }
 }

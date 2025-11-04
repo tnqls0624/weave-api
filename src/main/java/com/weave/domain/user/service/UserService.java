@@ -29,19 +29,6 @@ public class UserService {
         user.setScheduleAlarm(dto.isScheduleAlarm());
         userRepository.save(user);
 
-        return UserResponseDto.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .name(user.getName())
-                .loginType(user.getLoginType())
-                .inviteCode(user.getInviteCode())
-                .gender(user.getGender())
-                .birthday(user.getBirthday())
-                .fcmToken(user.getFcmToken())
-                .pushEnabled(user.isPushEnabled())
-                .anniversaryAlarm(user.isAnniversaryAlarm())
-                .scheduleAlarm(user.isScheduleAlarm())
-                .thumbnailImage(user.getThumbnailImage())
-                .build();
+        return UserResponseDto.from(user);
     }
 }

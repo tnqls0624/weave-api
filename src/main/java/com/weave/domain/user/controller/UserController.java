@@ -15,7 +15,7 @@ import com.weave.domain.user.service.UserService;
 import com.weave.global.dto.ApiResponse;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/user")
 @RequiredArgsConstructor
 public class UserController {
 

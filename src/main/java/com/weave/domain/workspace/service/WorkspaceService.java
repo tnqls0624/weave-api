@@ -26,7 +26,7 @@ public class WorkspaceService {
     private final UserRepository userRepository;
 
 
-    public WorkspaceResponseDto createWorkspace(CreateWorkspaceRequestDto dto, String email) {
+    public WorkspaceResponseDto create(CreateWorkspaceRequestDto dto, String email) {
         // 초대코드 확인(마스터)
         User master = userRepository.findByInviteCode(dto.getInviteCode()).orElseThrow(
                 () -> new BusinessException(ErrorCode.VALIDATION_ERROR, "존재하지 않는 초대코드 입니다.")
@@ -51,43 +51,37 @@ public class WorkspaceService {
                         .users(users)
                         .loveDay(dto.getLoveDay())
                         .thumbnailImage(dto.getThumbnailImage())
-                        .tags(dto.getTags())
                         .build()
         );
-
-        // DTO로 변환
-        return WorkspaceResponseDto.builder()
-                .id(workspace.getId())
-                .master(workspace.getMaster())
-                .users(workspace.getUsers())
-                .tags(workspace.getTags())
-                .loveDay(workspace.getLoveDay())
-                .thumbnailImage(workspace.getThumbnailImage())
-                .createdAt(workspace.getCreatedAt())
-                .updatedAt(workspace.getUpdatedAt())
-                .build();
+        return WorkspaceResponseDto.from(workspace);
     }
 
-    public WorkspaceResponseDto updateWorkspace(UpdateWorkspaceRequestDto dto, String id) {
+    public WorkspaceResponseDto update(UpdateWorkspaceRequestDto dto, String id) {
         Workspace workspace = workspaceRepository.findById(id).orElseThrow(
                 () -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)
         );
 
         workspace.setLoveDay(dto.getLoveDay());
-        workspace.setTags(dto.getTags());
         workspace.setThumbnailImage(dto.getThumbnailImage());
         workspaceRepository.save(workspace);
 
-        return WorkspaceResponseDto.builder()
-                .id(workspace.getId())
-                .master(workspace.getMaster())
-                .users(workspace.getUsers())
-                .tags(workspace.getTags())
-                .loveDay(workspace.getLoveDay())
-                .thumbnailImage(workspace.getThumbnailImage())
-                .createdAt(workspace.getCreatedAt())
-                .updatedAt(workspace.getUpdatedAt())
-                .build();
+        return WorkspaceResponseDto.from(workspace);
+    }
+
+    public WorkspaceResponseDto findById(String id) {
+        Workspace workspace = workspaceRepository.findById(id).orElseThrow(
+                () -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)
+        );
+        return WorkspaceResponseDto.from(workspace);
+    }
+
+    public WorkspaceResponseDto[] find(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(
+                () -> new BusinessException(ErrorCode.USER_NOT_FOUND)
+        );
+
+        List<Workspace> workspaces = workspaceRepository.findByUsersContaining(user.getId());
+        return workspaces.stream().map(WorkspaceResponseDto::from).toArray(WorkspaceResponseDto[]::new);
     }
 
 }

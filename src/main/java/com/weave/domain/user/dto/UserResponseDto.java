@@ -1,10 +1,15 @@
 package com.weave.domain.user.dto;
 
+import com.weave.domain.schedule.dto.ScheduleResponseDto;
+import com.weave.domain.schedule.entity.Schedule;
+import com.weave.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import org.bson.types.ObjectId;
 
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -43,15 +48,32 @@ public class UserResponseDto {
     @Schema(description = "푸시 알림 허용 여부", example = "true")
     private boolean pushEnabled;
 
-    @Schema(description = "기념일 알림 여부", example = "true")
-    private boolean anniversaryAlarm;
-
-    @Schema(description = "일정 알림 여부", example = "false")
-    private boolean scheduleAlarm;
+//    @Schema(description = "기념일 알림 여부", example = "true")
+//    private boolean anniversaryAlarm;
+//
+//    @Schema(description = "일정 알림 여부", example = "false")
+//    private boolean scheduleAlarm;
 
     @Schema(description = "생성일시", example = "2025-01-01T10:00:00Z")
     private Date createdAt;
 
     @Schema(description = "수정일시", example = "2025-01-02T10:00:00Z")
     private Date updatedAt;
+
+    public static UserResponseDto from(User user) {
+        return UserResponseDto.builder()
+                .id(user.getId())
+                .loginType(user.getLoginType())
+                .email(user.getEmail())
+                .name(user.getName())
+                .gender(user.getGender())
+                .birthday(user.getBirthday())
+                .thumbnailImage(user.getThumbnailImage())
+                .inviteCode(user.getInviteCode())
+                .fcmToken(user.getFcmToken())
+                .pushEnabled(user.isPushEnabled())
+                .createdAt(user.getCreatedAt())
+                .updatedAt(user.getUpdatedAt())
+                .build();
+    }
 }

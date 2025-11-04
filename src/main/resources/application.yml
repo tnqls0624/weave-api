@@ -20,9 +20,10 @@ spring:
       uri: mongodb://root:1234@localhost:27017/lovechedule?authSource=admin
       auto-index-creation: false
 
-  mvc:
-    problemdetails:
-      enabled: false
+  web:
+    mvc:
+      servlet:
+        path: /api
 
 #  web:
 #    cors:
@@ -52,38 +53,15 @@ security:
     # secret: ${SECURITY_JWT_SECRET:change-me}
 
 # =========================
-# OpenFeign
-# =========================
-feign:
-  httpclient:
-    enabled: true # feign-httpclient 모듈 사용
-    max-connections: 200
-    max-connections-per-route: 50
-  client:
-    config:
-      default:
-        connectTimeout: 3000
-        readTimeout: 5000
-        loggerLevel: BASIC # NONE/BASIC/HEADERS/FULL
-        decode404: true
-  compression:
-    request:
-      enabled: true
-      mime-types: text/xml,application/xml,application/json
-      min-request-size: 1024
-    response:
-      enabled: true
-
-# =========================
 # springdoc-openapi (Swagger UI)
 # =========================
-#springdoc:
+springdoc:
 #  api-docs:
 #    path: /v3/api/docs
-#  swagger-ui:
-#    path: /swagger
-#    display-request-duration: true
-#    operations-sorter: method
+  swagger-ui:
+    path: /swagger
+    display-request-duration: true
+    operations-sorter: method
 
 # =========================
 # Actuator / Micrometer (Prometheus)

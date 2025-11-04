@@ -14,7 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -40,10 +40,10 @@ public class AuthController {
     @SecurityRequirement(name = "JWT")
     @Tag(name= "AUTH")
     @Operation(summary = "개인 정보 수정")
-    @PutMapping("/update-user-info")
-    public ApiResponse<UserResponseDto> updateUserInfo(@Valid @RequestBody UpdateUserRequestDto dto,
+    @PutMapping("/update")
+    public ApiResponse<UserResponseDto> update(@Valid @RequestBody UpdateUserRequestDto dto,
                                                        @AuthenticationPrincipal UserDetails userDetails) {
-        return ApiResponse.ok(authService.updateUserInfo(dto, userDetails.getUsername()));
+        return ApiResponse.ok(authService.update(dto, userDetails.getUsername()));
     }
 
 }
