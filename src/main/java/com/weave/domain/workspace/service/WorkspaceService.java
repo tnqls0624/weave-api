@@ -57,7 +57,7 @@ public class WorkspaceService {
     }
 
     public WorkspaceResponseDto update(UpdateWorkspaceRequestDto dto, String id) {
-        Workspace workspace = workspaceRepository.findById(id).orElseThrow(
+        Workspace workspace = workspaceRepository.findById(new ObjectId(id)).orElseThrow(
                 () -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)
         );
 
@@ -69,7 +69,7 @@ public class WorkspaceService {
     }
 
     public WorkspaceResponseDto findById(String id) {
-        Workspace workspace = workspaceRepository.findById(id).orElseThrow(
+        Workspace workspace = workspaceRepository.findById(new ObjectId(id)).orElseThrow(
                 () -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)
         );
         return WorkspaceResponseDto.from(workspace);

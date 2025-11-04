@@ -23,7 +23,7 @@ public class ScheduleService {
 
     public ScheduleResponseDto create(CreateRequestScheduleDto dto, String id) {
         // 워크스페이스 찾기
-        workspaceRepository.findById(id)
+        workspaceRepository.findById(new ObjectId(id))
                 .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
 
         Schedule schedule = Schedule.builder()
@@ -47,7 +47,7 @@ public class ScheduleService {
     }
 
     public ScheduleResponseDto update(UpdateRequestScheduleDto dto, String id) {
-        Schedule schedule = scheduleRepository.findById(id)
+        Schedule schedule = scheduleRepository.findById(new ObjectId(id))
                 .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
 
         schedule.setTitle(dto.getTitle());
@@ -69,7 +69,7 @@ public class ScheduleService {
     }
 
     public ScheduleResponseDto delete(String id) {
-        Schedule schedule = scheduleRepository.findById(id)
+        Schedule schedule = scheduleRepository.findById(new ObjectId(id))
                 .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
 
         scheduleRepository.delete(schedule);
@@ -77,7 +77,7 @@ public class ScheduleService {
     }
 
     public ScheduleResponseDto findById(String id) {
-        Schedule schedule = scheduleRepository.findById(id)
+        Schedule schedule = scheduleRepository.findById(new ObjectId(id))
                 .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
         return ScheduleResponseDto.from(schedule);
     }

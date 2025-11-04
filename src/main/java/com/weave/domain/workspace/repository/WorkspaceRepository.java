@@ -9,6 +9,6 @@ import com.weave.domain.workspace.entity.Workspace;
 import java.util.List;
 
 @Repository
-public interface WorkspaceRepository extends MongoRepository<Workspace, String> {
+public interface WorkspaceRepository extends MongoRepository<Workspace, ObjectId> {
     List<Workspace> findByUsersContaining(ObjectId userId);
 }

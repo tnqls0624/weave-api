@@ -66,6 +66,13 @@ dependencies {
 
     // Retry
     implementation 'org.springframework.retry:spring-retry:2.0.7'
+
+    // ShedLock for distributed scheduled tasks
+    implementation 'net.javacrumbs.shedlock:shedlock-spring:5.15.1'
+    implementation 'net.javacrumbs.shedlock:shedlock-provider-mongo:5.15.1'
+
+    // Firebase Cloud Messaging
+    implementation 'com.google.firebase:firebase-admin:9.3.0'
 }
 
 tasks.named('test') {

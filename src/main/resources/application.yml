@@ -53,6 +53,12 @@ security:
     # secret: ${SECURITY_JWT_SECRET:change-me}
 
 # =========================
+# Firebase Cloud Messaging
+# =========================
+firebase:
+  config-path: firebase-service-account.json
+
+# =========================
 # springdoc-openapi (Swagger UI)
 # =========================
 springdoc:
