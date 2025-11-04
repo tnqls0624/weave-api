@@ -3,6 +3,8 @@ package com.weave.global.config;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.weave.global.BusinessException;
+import com.weave.global.ErrorCode;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,7 +35,7 @@ public class FirebaseConfig {
       }
     } catch (IOException e) {
       log.error("Failed to initialize Firebase", e);
-      throw new RuntimeException("Firebase initialization failed", e);
+      throw new BusinessException(ErrorCode.INTERNAL_ERROR);
     }
   }
 }

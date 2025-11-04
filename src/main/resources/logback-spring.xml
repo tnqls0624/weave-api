@@ -20,24 +20,6 @@
     </encoder>
   </appender>
 
-  <!-- SLACK -->
-  <!--  <appender class="com.github.maricn.logback.SlackAppender" name="SLACK_ERROR">-->
-  <!--    <channel>${SLACK_CHANNEL}</channel>-->
-  <!--    <colorCoding>true</colorCoding>-->
-  <!--    <iconEmoji>:${SLACK_EMOJI}:</iconEmoji>-->
-  <!--    <layout class="ch.qos.logback.classic.PatternLayout">-->
-  <!--      <pattern>${LOG_PATTERN_FILE}</pattern>-->
-  <!--    </layout>-->
-  <!--    <username>${SLACK_USERNAME}</username>-->
-  <!--    <webhookUri>${SLACK_WEBHOOK}</webhookUri>-->
-  <!--  </appender>-->
-  <!--  <appender class="ch.qos.logback.classic.AsyncAppender" name="ASYNC_SLACK_ERROR">-->
-  <!--    <appender-ref ref="SLACK_ERROR"/>-->
-  <!--    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">-->
-  <!--      <level>ERROR</level>-->
-  <!--    </filter>-->
-  <!--  </appender>-->
-
   <!-- FILE -->
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
     <file>${LOG_DIR}/general.log</file>
@@ -69,7 +51,6 @@
     <root level="INFO">
       <appender-ref ref="CONSOLE"/>
       <appender-ref ref="FILE"/>
-      <!--      <appender-ref ref="ASYNC_SLACK_ERROR"/>-->
     </root>
   </springProfile>
 

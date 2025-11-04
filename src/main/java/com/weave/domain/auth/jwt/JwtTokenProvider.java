@@ -36,10 +36,10 @@ public class JwtTokenProvider {
         this.privateKey = keyPair.getPrivate();
         this.publicKey = keyPair.getPublic();
 
-        System.out.println("⚡ [DEV MODE] 새 RSA 키 자동 생성됨");
-        System.out.println("PrivateKey (Base64): " +
+        log.info("⚡ [DEV MODE] 새 RSA 키 자동 생성됨");
+        log.info("PrivateKey (Base64): {}",
             Base64.getEncoder().encodeToString(this.privateKey.getEncoded()));
-        System.out.println("PublicKey (Base64): " +
+        log.info("PublicKey (Base64): {}",
             Base64.getEncoder().encodeToString(this.publicKey.getEncoded()));
 
       } catch (Exception e) {

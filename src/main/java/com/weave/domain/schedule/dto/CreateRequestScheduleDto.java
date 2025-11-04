@@ -41,11 +41,6 @@ public class CreateRequestScheduleDto {
   @NotEmpty
   private List<String> participants;
 
-//    @Schema(example = "false", description = "기념일 여부")
-//    @JsonProperty("is_anniversary")
-//    @NotNull
-//    private Boolean isAnniversary;
-
   @Schema(example = "SOLAR", description = "양력, 음력")
   @JsonProperty("calendar_type")
   @NotNull
