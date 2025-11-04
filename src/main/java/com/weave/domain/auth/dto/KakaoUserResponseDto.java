@@ -10,25 +10,27 @@ import lombok.Data;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class KakaoUserResponseDto {
 
-    private Long id;
-    private String connectedAt;
-    private KakaoAccount kakaoAccount;
+  private Long id;
+  private String connectedAt;
+  private KakaoAccount kakaoAccount;
 
-    @Data
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class KakaoAccount {
-        private String email;
-        private String gender;
-        private String birthday;
-        private Profile profile;
-    }
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+  public static class KakaoAccount {
 
-    @Data
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    public static class Profile {
-        private String nickname;
-        private String thumbnailImageUrl;
-    }
+    private String email;
+    private String gender;
+    private String birthday;
+    private Profile profile;
+  }
+
+  @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+  public static class Profile {
+
+    private String nickname;
+    private String thumbnailImageUrl;
+  }
 }

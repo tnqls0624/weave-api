@@ -62,8 +62,8 @@ firebase:
 # springdoc-openapi (Swagger UI)
 # =========================
 springdoc:
-#  api-docs:
-#    path: /v3/api/docs
+  #  api-docs:
+  #    path: /v3/api/docs
   swagger-ui:
     path: /swagger
     display-request-duration: true

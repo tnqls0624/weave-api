@@ -13,6 +13,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class PageResponse<T> {
-    private long total;
-    private List<T> list;
+
+  private long total;
+  private List<T> list;
 }

@@ -1,6 +1,10 @@
 package com.weave.domain.user.dto;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -9,8 +13,8 @@ import lombok.*;
 @Builder
 public class UpdateNotificationRequestDto {
 
-    private String fcmToken;
-    private boolean pushEnabled;
-    private boolean scheduleAlarm;
-    private boolean anniversaryAlarm;
+  private String fcmToken;
+  private boolean pushEnabled;
+  private boolean scheduleAlarm;
+  private boolean anniversaryAlarm;
 }
