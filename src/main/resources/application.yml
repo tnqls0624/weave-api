@@ -2,6 +2,8 @@
 # 공통 설정
 # =========================
 spring:
+  profiles:
+    active: local  # 기본 프로필 설정
   application:
     name: weave-api
   main:
@@ -120,10 +122,29 @@ spring:
     mongodb:
       uri: mongodb://root:1234@localhost:27017/lovechedule?authSource=admin
 logging:
+  file:
+    path: ./logs/weave-api
   level:
     root: debug
     org.springframework.security: info
     org.springframework.web: info
+
+# =========================
+# 프로필: dev
+# =========================
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  data:
+    mongodb:
+      uri: mongodb://root:1234@localhost:27017/lovechedule?authSource=admin
+logging:
+  file:
+    path: ./logs/weave-api
+  level:
+    root: info
 
 # =========================
 # 프로필: prod
@@ -139,5 +160,7 @@ spring:
 server:
   port: ${PORT:8080}
 logging:
+  file:
+    path: /var/log/weave-api
   level:
     root: info
