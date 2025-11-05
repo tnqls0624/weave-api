@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,8 +42,7 @@ public class ScheduleController {
   @Tag(name = "Schedule")
   @Operation(summary = "스케줄 조회")
   @GetMapping("/{id}")
-  public ApiResponse<ScheduleResponseDto> findById(
-      @RequestParam(value = "id", required = true) String id) {
+  public ApiResponse<ScheduleResponseDto> findById(@PathVariable String id) {
     return ApiResponse.ok(scheduleService.findById(id));
   }
 
@@ -52,7 +52,7 @@ public class ScheduleController {
   @Operation(summary = "스케줄 수정")
   @PutMapping("/{id}")
   public ApiResponse<ScheduleResponseDto> update(@Valid @RequestBody UpdateRequestScheduleDto dto,
-      @RequestParam(value = "id", required = true) String id) {
+      @PathVariable String id) {
     return ApiResponse.ok(scheduleService.update(dto, id));
   }
 
@@ -61,8 +61,7 @@ public class ScheduleController {
   @Tag(name = "Schedule")
   @Operation(summary = "스케줄 삭제")
   @DeleteMapping("/{id}")
-  public ApiResponse<ScheduleResponseDto> delete(
-      @RequestParam(value = "id", required = true) String id) {
+  public ApiResponse<ScheduleResponseDto> delete(@PathVariable String id) {
     return ApiResponse.ok(scheduleService.delete(id));
   }
 }

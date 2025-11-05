@@ -81,4 +81,18 @@ public class WorkspaceService {
     return workspaces.stream().map(WorkspaceResponseDto::from).toArray(WorkspaceResponseDto[]::new);
   }
 
+  public void delete(String id) {
+    workspaceRepository.deleteById(new ObjectId(id));
+  }
+
+  public WorkspaceResponseDto findWorkspaceSchedule(String id, String year, String month,
+      String week, String day) {
+    // TODO: 타입스크립트 로직 참고하여 구현 필요
+    // 1. ObjectId 유효성 검사
+    // 2. 스케줄 조회
+    // 3. 공휴일 캘린더 조회 및 병합
+    // 4. 날짜별 정렬
+    return null;
+  }
+
 }

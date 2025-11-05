@@ -5,10 +5,8 @@ import com.weave.domain.auth.dto.LoginRequestDto;
 import com.weave.domain.auth.dto.LoginResponseDto;
 import com.weave.domain.auth.dto.SocialLoginRequestDto;
 import com.weave.domain.auth.dto.SocialLoginResponseDto;
-import com.weave.domain.auth.dto.UpdateUserRequestDto;
 import com.weave.domain.auth.jwt.JwtTokenProvider;
 import com.weave.domain.auth.repository.AuthRepository;
-import com.weave.domain.user.dto.UserResponseDto;
 import com.weave.domain.user.entity.LoginType;
 import com.weave.domain.user.entity.User;
 import com.weave.global.BusinessException;
@@ -127,25 +125,5 @@ public class AuthService {
                     .build()
             )
         );
-  }
-
-  // 개인 정보 수정
-  public UserResponseDto update(UpdateUserRequestDto dto, String email) {
-    User user = authRepository.findByEmail(email)
-        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-    user.setName(dto.getName());
-    user.setFcmToken(dto.getFcmToken());
-    user.setPushEnabled(dto.isPushEnabled());
-    user.setAnniversaryAlarm(dto.isAnniversaryAlarm());
-    user.setScheduleAlarm(dto.isScheduleAlarm());
-    authRepository.save(user);
-
-    return UserResponseDto.from(user);
-  }
-
-  public UserResponseDto findByEmail(String email) {
-    User user = authRepository.findByEmail(email)
-        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-    return UserResponseDto.from(user);
   }
 }

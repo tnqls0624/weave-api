@@ -58,7 +58,7 @@ security:
 # Firebase Cloud Messaging
 # =========================
 firebase:
-  config-path: firebase-service-account.json
+  config-path: weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json
 
 # =========================
 # springdoc-openapi (Swagger UI)
