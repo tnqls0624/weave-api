@@ -1,7 +1,7 @@
 package com.weave.domain.user.service;
 
-import com.weave.domain.auth.dto.UpdateUserRequestDto;
 import com.weave.domain.user.dto.UpdateNotificationRequestDto;
+import com.weave.domain.user.dto.UpdateUserRequestDto;
 import com.weave.domain.user.dto.UserResponseDto;
 import com.weave.domain.user.entity.User;
 import com.weave.domain.user.repository.UserRepository;
@@ -25,24 +25,29 @@ public class UserService {
   public UserResponseDto updateNotification(UpdateNotificationRequestDto dto, String email) {
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
-    user.setFcmToken(dto.getFcmToken());
     user.setPushEnabled(dto.isPushEnabled());
-    user.setAnniversaryAlarm(dto.isAnniversaryAlarm());
-    user.setScheduleAlarm(dto.isScheduleAlarm());
     userRepository.save(user);
-
     return UserResponseDto.from(user);
   }
 
-  // 개인 정보 수정
+  // 개인 정보 수정 (dto에 값이 담긴 항목만 업데이트)
   public UserResponseDto update(UpdateUserRequestDto dto, String email) {
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-    user.setName(dto.getName());
-    user.setFcmToken(dto.getFcmToken());
-    user.setPushEnabled(dto.isPushEnabled());
-    user.setAnniversaryAlarm(dto.isAnniversaryAlarm());
-    user.setScheduleAlarm(dto.isScheduleAlarm());
+
+    if (dto.getName() != null) {
+      user.setName(dto.getName());
+    }
+    if (dto.getFcmToken() != null) {
+      user.setFcmToken(dto.getFcmToken());
+    }
+    if (dto.getAvatarUrl() != null) {
+      user.setAvatarUrl(dto.getAvatarUrl());
+    }
+    if (dto.getPushEnabled() != null) {
+      user.setPushEnabled(dto.getPushEnabled());
+    }
+
     userRepository.save(user);
 
     return UserResponseDto.from(user);

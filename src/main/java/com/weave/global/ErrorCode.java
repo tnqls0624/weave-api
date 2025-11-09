@@ -12,10 +12,12 @@ public enum ErrorCode {
   ACCESS_DENIED(HttpStatus.FORBIDDEN, "A003", "Access denied"),
   TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "A004", "Invalid token"),
   TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "A005", "Token expired"),
+  INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "A006", "Invalid refresh token"),
+  EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "A007", "Expired refresh token"),
 
   // 로그인
-  PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "A006", "Password mismatch"),
-  SOCIAL_LOGIN_FAILED(HttpStatus.BAD_REQUEST, "A007", "Social login failed"),
+  PASSWORD_MISMATCH(HttpStatus.BAD_REQUEST, "A008", "Password mismatch"),
+  SOCIAL_LOGIN_FAILED(HttpStatus.BAD_REQUEST, "A009", "Social login failed"),
 
   // 사용자/권한/역할
   USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "User not found"),
@@ -31,7 +33,7 @@ public enum ErrorCode {
   INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S001", "Internal server error"),
   WORKSPACE_NOT_FOUND(HttpStatus.BAD_REQUEST, "C003", "Workspace not found"),
   SCHEDULE_NOT_FOUND(HttpStatus.BAD_REQUEST, "C004", "Schedule not found"),
-  ;
+  WORKSPACE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "C005", "Workspace access denied");
 
   private final HttpStatus httpStatus;
   private final String code;

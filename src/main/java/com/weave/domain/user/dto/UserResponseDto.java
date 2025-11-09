@@ -8,7 +8,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.bson.types.ObjectId;
 
 @Getter
 @Setter
@@ -18,7 +17,7 @@ import org.bson.types.ObjectId;
 public class UserResponseDto {
 
   @Schema(description = "사용자 ID", example = "672cb481f2a04d291bbd1423")
-  private ObjectId id;
+  private String id;
 
   @Schema(description = "로그인 타입", example = "google")
   private String loginType;
@@ -47,11 +46,8 @@ public class UserResponseDto {
   @Schema(description = "푸시 알림 허용 여부", example = "true")
   private boolean pushEnabled;
 
-//    @Schema(description = "기념일 알림 여부", example = "true")
-//    private boolean anniversaryAlarm;
-//
-//    @Schema(description = "일정 알림 여부", example = "false")
-//    private boolean scheduleAlarm;
+  @Schema(description = "유저 프로필 이미지", example = "https://example.com/avatar.jpg")
+  private String avatarUrl;
 
   @Schema(description = "생성일시", example = "2025-01-01T10:00:00Z")
   private Date createdAt;
@@ -61,7 +57,7 @@ public class UserResponseDto {
 
   public static UserResponseDto from(User user) {
     return UserResponseDto.builder()
-        .id(user.getId())
+        .id(user.getId() != null ? user.getId().toHexString() : null)
         .loginType(user.getLoginType())
         .email(user.getEmail())
         .name(user.getName())
@@ -71,6 +67,7 @@ public class UserResponseDto {
         .inviteCode(user.getInviteCode())
         .fcmToken(user.getFcmToken())
         .pushEnabled(user.isPushEnabled())
+        .avatarUrl(user.getAvatarUrl())
         .createdAt(user.getCreatedAt())
         .updatedAt(user.getUpdatedAt())
         .build();

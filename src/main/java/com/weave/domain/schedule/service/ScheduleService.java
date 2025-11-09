@@ -1,5 +1,6 @@
 package com.weave.domain.schedule.service;
 
+import com.google.common.collect.ImmutableList;
 import com.weave.domain.schedule.dto.CreateRequestScheduleDto;
 import com.weave.domain.schedule.dto.ScheduleResponseDto;
 import com.weave.domain.schedule.dto.UpdateRequestScheduleDto;
@@ -10,6 +11,7 @@ import com.weave.domain.workspace.repository.WorkspaceRepository;
 import com.weave.global.BusinessException;
 import com.weave.global.ErrorCode;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
@@ -28,20 +30,27 @@ public class ScheduleService {
   private final ScheduleNotificationService scheduleNotificationService;
 
   @Transactional
-  public ScheduleResponseDto create(CreateRequestScheduleDto dto, String id) {
-    // 워크스페이스 찾기
-    Workspace workspace = workspaceRepository.findById(new ObjectId(id))
+  public ScheduleResponseDto create(CreateRequestScheduleDto dto) {
+
+    Workspace workspace = workspaceRepository.findById(dto.getWorkspace())
         .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
 
+    log.info("create schedule for workspace: {}", workspace.getId());
+
+    List<ObjectId> participantIds = Optional.ofNullable(dto.getParticipants())
+        .map(participants -> participants.stream()
+            .map(ObjectId::new)
+            .toList())
+        .orElse(ImmutableList.of());
+
     Schedule schedule = Schedule.builder()
-        .workspace(new ObjectId(id))
+        .workspace(workspace.getId())
         .title(dto.getTitle())
         .memo(dto.getMemo())
         .startDate(dto.getStartDate())
         .endDate(dto.getEndDate())
-        .repeatType(dto.getRepeatType())
-        .participants(dto.getParticipants() == null ? List.of()
-            : dto.getParticipants().stream().map(ObjectId::new).toList())
+        .repeatType(String.valueOf(dto.getRepeatType()))
+        .participants(participantIds)
         .calendarType(dto.getCalendarType())
         .build();
 
@@ -71,15 +80,17 @@ public class ScheduleService {
     schedule.setMemo(dto.getMemo());
     schedule.setStartDate(dto.getStartDate());
     schedule.setEndDate(dto.getEndDate());
-    schedule.setRepeatType(dto.getRepeatType());
+    schedule.setRepeatType(String.valueOf(dto.getRepeatType()));
     schedule.setCalendarType(dto.getCalendarType());
-    if (dto.getParticipants() != null) {
-      schedule.setParticipants(
-          dto.getParticipants().stream()
-              .map(ObjectId::new)
-              .toList()
-      );
-    }
+
+    Optional.ofNullable(dto.getParticipants())
+        .ifPresent(participants ->
+            schedule.setParticipants(
+                participants.stream()
+                    .map(ObjectId::new)
+                    .toList()
+            )
+        );
 
     Schedule updatedSchedule = scheduleRepository.save(schedule);
     return ScheduleResponseDto.from(updatedSchedule);

@@ -2,6 +2,7 @@ package com.weave.domain.workspace.entity;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,13 +24,19 @@ public class Workspace {
   @Id
   private ObjectId id;
 
+  @Field("title")
+  private String title;
+
   @Field("master")
   private ObjectId master;
 
   @Field("users")
   private List<ObjectId> users;
 
-  private Tag tags;
+  @Field("participant_colors")
+  private Map<String, String> participantColors; // key: userId, value: color code (e.g., "#FF5733")
+
+  private Tag tags; // 기존 태그 (하위 호환성 유지)
 
   @Field("love_day")
   private String loveDay;

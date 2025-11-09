@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -31,10 +30,9 @@ public class ScheduleController {
   @SecurityRequirement(name = "JWT")
   @Tag(name = "Schedule")
   @Operation(summary = "스케줄 작성")
-  @PostMapping("/")
-  public ApiResponse<ScheduleResponseDto> create(@Valid @RequestBody CreateRequestScheduleDto dto,
-      @RequestParam(value = "id", required = true) String id) {
-    return ApiResponse.ok(scheduleService.create(dto, id));
+  @PostMapping
+  public ApiResponse<ScheduleResponseDto> create(@Valid @RequestBody CreateRequestScheduleDto dto) {
+    return ApiResponse.ok(scheduleService.create(dto));
   }
 
   // 스케줄 조회

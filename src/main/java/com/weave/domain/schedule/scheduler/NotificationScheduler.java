@@ -64,7 +64,7 @@ public class NotificationScheduler {
       }
 
       // 일정 알림 설정이 켜져있는 유저에게만 알림 발송
-      if (user.isScheduleAlarm()) {
+      if (user.isPushEnabled()) {
         sendScheduleNotification(user, userSchedules);
       }
     }

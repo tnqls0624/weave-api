@@ -13,8 +13,5 @@ import lombok.Setter;
 @Builder
 public class UpdateNotificationRequestDto {
 
-  private String fcmToken;
   private boolean pushEnabled;
-  private boolean scheduleAlarm;
-  private boolean anniversaryAlarm;
 }

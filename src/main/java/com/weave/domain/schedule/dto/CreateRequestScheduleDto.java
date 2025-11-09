@@ -1,8 +1,5 @@
 package com.weave.domain.schedule.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.weave.domain.schedule.entity.Schedule.CalendarType;
-import com.weave.domain.schedule.entity.Schedule.RepeatType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -10,10 +7,15 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.bson.types.ObjectId;
 
 @Getter
 @Setter
 public class CreateRequestScheduleDto {
+
+  @Schema(description = "워크스페이스 ID")
+  @NotNull
+  private ObjectId workspace;
 
   @Schema(example = "누나생일", description = "제목")
   @NotBlank
@@ -23,26 +25,22 @@ public class CreateRequestScheduleDto {
   private String memo;
 
   @Schema(example = "2025-01-10 13:00:00", description = "시작 날짜")
-  @JsonProperty("start_date")
   @NotBlank
   private String startDate;
 
   @Schema(example = "2025-01-11 13:00:00", description = "종료 날짜")
-  @JsonProperty("end_date")
   @NotBlank
   private String endDate;
 
-  @Schema(example = "NONE", description = "반복 타입")
-  @JsonProperty("repeat_type")
+  @Schema(example = "none", description = "반복 타입")
   @NotNull
-  private RepeatType repeatType;
+  private String repeatType;
 
   @Schema(example = "[\"66a61517670be7ef30b10244\", \"66a7ae7f25483684cf347cd9\"]", description = "참여자")
   @NotEmpty
   private List<String> participants;
 
-  @Schema(example = "SOLAR", description = "양력, 음력")
-  @JsonProperty("calendar_type")
+  @Schema(example = "solar", description = "양력, 음력")
   @NotNull
-  private CalendarType calendarType;
+  private String calendarType;
 }

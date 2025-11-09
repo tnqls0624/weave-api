@@ -1,8 +1,6 @@
 package com.weave.domain.schedule.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.weave.domain.schedule.entity.Schedule.CalendarType;
-import com.weave.domain.schedule.entity.Schedule.RepeatType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -35,19 +33,14 @@ public class UpdateRequestScheduleDto {
   @Schema(example = "NONE", description = "반복 타입")
   @JsonProperty("repeat_type")
   @NotNull
-  private RepeatType repeatType;
+  private String repeatType;
 
   @Schema(example = "[\"66a61517670be7ef30b10244\", \"66a7ae7f25483684cf347cd9\"]", description = "참여자")
   @NotEmpty
   private List<String> participants;
 
-//    @Schema(example = "false", description = "기념일 여부")
-//    @JsonProperty("is_anniversary")
-//    @NotNull
-//    private Boolean isAnniversary;
-
   @Schema(example = "SOLAR", description = "양력, 음력")
   @JsonProperty("calendar_type")
   @NotNull
-  private CalendarType calendarType;
+  private String calendarType;
 }

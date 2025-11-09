@@ -1,7 +1,6 @@
 package com.weave.domain.schedule.entity;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.util.Date;
 import java.util.List;
 import lombok.AllArgsConstructor;
@@ -12,7 +11,6 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
@@ -33,11 +31,6 @@ public class Schedule {
   @Field("memo")
   private String memo;
 
-  @Field("is_anniversary")
-  @NotNull
-  @Builder.Default
-  private Boolean isAnniversary = false;
-
   @Field("start_date")
   @NotBlank
   private String startDate;
@@ -48,7 +41,7 @@ public class Schedule {
 
   @Field("repeat_type")
   @Builder.Default
-  private RepeatType repeatType = RepeatType.NONE;
+  private String repeatType = "none";
 
   @Field("participants")
   @Builder.Default
@@ -56,10 +49,9 @@ public class Schedule {
 
   @Field("calendar_type")
   @Builder.Default
-  private CalendarType calendarType = CalendarType.SOLAR;
+  private String calendarType = "solar";
 
   @Field("workspace")
-  @DBRef
   private ObjectId workspace;
 
   @CreatedDate
@@ -67,35 +59,4 @@ public class Schedule {
 
   @LastModifiedDate
   private Date updatedAt;
-
-  public enum RepeatType {
-    NONE("none"),
-    MONTHLY("monthly"),
-    YEARLY("yearly");
-
-    private final String value;
-
-    RepeatType(String value) {
-      this.value = value;
-    }
-
-    public String getValue() {
-      return value;
-    }
-  }
-
-  public enum CalendarType {
-    SOLAR("solar"),
-    LUNAR("lunar");
-
-    private final String value;
-
-    CalendarType(String value) {
-      this.value = value;
-    }
-
-    public String getValue() {
-      return value;
-    }
-  }
 }

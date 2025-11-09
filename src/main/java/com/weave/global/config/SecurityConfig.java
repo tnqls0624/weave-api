@@ -35,11 +35,11 @@ public class SecurityConfig {
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(
                 "/",
-                "/api/auth/**",
-                "/api/user/invite/**",
+                "/auth/**",
+                "/user/invite/**",
                 "/swagger/**",
                 "/v3/api-docs/**",
-                "swagger-ui/**",
+                "/swagger-ui/**",
                 "/health").permitAll() // 로그인, 회원가입 등은 허용
             .anyRequest().authenticated()
         ).addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),

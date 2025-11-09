@@ -54,3 +54,6 @@ secrets.properties
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+### JWT Keys (로컬 개발용) ###
+keys/
