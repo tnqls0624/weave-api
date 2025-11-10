@@ -90,7 +90,7 @@ jobs:
           FIREBASE_CONFIG_PATH=\${FIREBASE_CONFIG_PATH}
 
           # Server
-          PORT=\${PORT}
+          SERVER_PORT=\${SERVER_PORT}
 
           LOG_LEVEL=${{ env.LOG_LEVEL }}
           EOF
@@ -303,7 +303,7 @@ jobs:
               FIREBASE_CONFIG_PATH="${{ secrets.PROD_FIREBASE_CONFIG_PATH }}"
 
               # Server
-              PORT="${{ secrets.PROD_PORT }}"
+              SERVER_PORT="${{ secrets.PROD_PORT }}"
             else
               # 개발계는 기존 시크릿 사용
 
@@ -334,7 +334,7 @@ jobs:
               FIREBASE_CONFIG_PATH="${{ secrets.FIREBASE_CONFIG_PATH }}"
 
               # Server
-              PORT="${{ secrets.PORT }}"
+              SERVER_PORT="${{ secrets.PORT }}"
             fi
 
             # EC2에서 직접 배포 실행 (배포 파일은 이미 업로드됨)
@@ -356,7 +356,7 @@ jobs:
             export AWS_S3_PUBLIC_BASE_URL=${AWS_S3_PUBLIC_BASE_URL}
             export AWS_S3_UPLOAD_PREFIX=${AWS_S3_UPLOAD_PREFIX}
             export FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH}
-            export PORT=${PORT}
+            export SERVER_PORT=${SERVER_PORT}
 
             # .env 파일을 실제 값으로 재생성
             cat > .env << 'ENVEOF'
@@ -378,7 +378,7 @@ jobs:
             AWS_S3_PUBLIC_BASE_URL=${AWS_S3_PUBLIC_BASE_URL}
             AWS_S3_UPLOAD_PREFIX=${AWS_S3_UPLOAD_PREFIX}
             FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH}
-            PORT=${PORT}
+            SERVER_PORT=${SERVER_PORT}
             FORCE_UPDATE_TRAEFIK=${{ secrets.FORCE_UPDATE_TRAEFIK }}
             FORCE_UPDATE_MONGODB=${{ secrets.FORCE_UPDATE_MONGODB }}
             FORCE_UPDATE_REDIS=${{ secrets.FORCE_UPDATE_REDIS }}
