@@ -88,7 +88,7 @@ services:
           cpus: '0.25'
           memory: 256M
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -114,16 +114,6 @@ services:
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION:-31536000000}
       - JWT_PRIVATE_KEY_PATH=${JWT_PRIVATE_KEY_PATH:-}
       - JWT_PUBLIC_KEY_PATH=${JWT_PUBLIC_KEY_PATH:-}
-
-      # OAuth - Kakao
-      - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
-      - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
-      - KAKAO_REDIRECT_URI=${KAKAO_REDIRECT_URI}
-
-      # OAuth - Google
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
 
       # Holiday API
       - HOLIDAY_API_SERVICE_KEY=${HOLIDAY_API_KEY}
