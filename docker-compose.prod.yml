@@ -15,11 +15,6 @@ services:
       - "--metrics.prometheus=true"
       - "--accesslog=true"
       - "--log.level=INFO"
-    ports:
-      - "80:80"
-      - "443:443"
-      - "7070:7070"  # RSocket WebSocket
-      - "8081:8080"  # Traefik Dashboard
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
@@ -35,9 +30,26 @@ services:
         - "traefik.http.routers.dashboard.rule=Host(`traefik.weave.local`)"
         - "traefik.http.routers.dashboard.service=api@internal"
         - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+      - target: 443
+        published: 443
+        protocol: tcp
+        mode: host
+      - target: 7070
+        published: 7070
+        protocol: tcp
+        mode: host
+      - target: 8080
+        published: 8081
+        protocol: tcp
+        mode: host
 
   mongodb:
-    image: mongo:8.2
+    image: mongo:7.0
     environment:
       - MONGO_INITDB_ROOT_USERNAME=root
       - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD}
