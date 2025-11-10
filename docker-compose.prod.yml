@@ -130,9 +130,6 @@ services:
       # Firebase
       - FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH:-weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json}
 
-      # Server (Spring Boot uses 8080 by default)
-      - SERVER_PORT=${SERVER_PORT:-8080}
-
       # Timezone
       - TZ=Asia/Seoul
     networks:
