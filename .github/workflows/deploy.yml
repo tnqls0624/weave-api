@@ -1,0 +1,394 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set environment variables based on branch
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "ENVIRONMENT=production" >> $GITHUB_ENV
+            echo "ECR_REPOSITORY=weave-api/prod" >> $GITHUB_ENV
+            echo "APP_ENV=production" >> $GITHUB_ENV
+            echo "APP_DEBUG=false" >> $GITHUB_ENV
+            echo "LOG_LEVEL=error" >> $GITHUB_ENV
+          fi
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        id: build-image
+        run: |
+          docker build --no-cache -t $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA" >> $GITHUB_OUTPUT
+
+      - name: Prepare deployment files
+        run: |
+          mkdir -p deploy
+
+          # 프로덕션 Docker Compose 파일 복사
+          cp docker-compose.prod.yml deploy/docker-compose.yml
+
+          # 환경 변수 파일 생성
+          cat > deploy/.env << EOF
+          ECR_REGISTRY=${{ env.ECR_REGISTRY }}
+          ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}
+          IMAGE_TAG=${{ github.sha }}
+
+          SPRING_PROFILES_ACTIVE=${{ env.APP_ENV }}
+
+          # MongoDB
+          SPRING_DATA_MONGODB_URI=\${SPRING_DATA_MONGODB_URI}
+          MONGODB_ROOT_PASSWORD=\${MONGODB_ROOT_PASSWORD}
+
+          # Redis
+          REDIS_HOST=\${REDIS_HOST}
+          REDIS_PORT=\${REDIS_PORT}
+
+          # JWT
+          JWT_EXPIRATION=\${JWT_EXPIRATION}
+          JWT_REFRESH_EXPIRATION=\${JWT_REFRESH_EXPIRATION}
+          JWT_PRIVATE_KEY_PATH=\${JWT_PRIVATE_KEY_PATH}
+          JWT_PUBLIC_KEY_PATH=\${JWT_PUBLIC_KEY_PATH}
+
+          # OAuth - Kakao
+          KAKAO_CLIENT_ID=\${KAKAO_CLIENT_ID}
+          KAKAO_CLIENT_SECRET=\${KAKAO_CLIENT_SECRET}
+          KAKAO_REDIRECT_URI=\${KAKAO_REDIRECT_URI}
+
+          # OAuth - Google
+          GOOGLE_CLIENT_ID=\${GOOGLE_CLIENT_ID}
+          GOOGLE_CLIENT_SECRET=\${GOOGLE_CLIENT_SECRET}
+          GOOGLE_REDIRECT_URI=\${GOOGLE_REDIRECT_URI}
+
+          # Holiday API
+          HOLIDAY_API_KEY=\${HOLIDAY_API_KEY}
+          HOLIDAY_API_BASE_URL=\${HOLIDAY_API_BASE_URL}
+
+          # AWS S3
+          AWS_REGION=\${AWS_REGION}
+          AWS_S3_BUCKET=\${AWS_S3_BUCKET}
+          AWS_S3_PUBLIC_BASE_URL=\${AWS_S3_PUBLIC_BASE_URL}
+          AWS_S3_UPLOAD_PREFIX=\${AWS_S3_UPLOAD_PREFIX}
+
+          # Firebase
+          FIREBASE_CONFIG_PATH=\${FIREBASE_CONFIG_PATH}
+
+          # Server
+          PORT=\${PORT}
+
+          LOG_LEVEL=${{ env.LOG_LEVEL }}
+          EOF
+
+          # 배포 스크립트 생성
+          cat > deploy/deploy.sh << 'EOF'
+          #!/bin/bash
+          set -e
+
+          echo "=== Weave API 애플리케이션 배포 시작 (${{ env.ENVIRONMENT }}) ==="
+
+          # AWS CLI 설정 확인
+          echo "AWS CLI 버전 확인 중..."
+          aws --version
+
+          # docker-compose 설치 확인 및 설치
+          if ! command -v docker-compose &> /dev/null; then
+            echo "docker-compose 설치 중..."
+            sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+            sudo chmod +x /usr/local/bin/docker-compose
+            echo "docker-compose 설치 완료"
+          fi
+          echo "docker-compose 버전: $(docker-compose --version)"
+
+          # Docker Swarm 초기화 확인
+          echo "Docker Swarm 상태 확인 중..."
+          if ! docker info | grep -q "Swarm: active"; then
+            echo "Docker Swarm 초기화 중..."
+            docker swarm init || true
+          else
+            echo "  - Docker Swarm이 이미 활성화되어 있습니다."
+          fi
+
+          # ECR 로그인
+          echo "ECR 로그인 중..."
+          aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin $ECR_REGISTRY > /dev/null 2>&1
+
+          # 오버레이 네트워크 생성 (존재하지 않으면)
+          echo "오버레이 네트워크 확인 중..."
+          if ! docker network ls | grep -q weave-network; then
+            echo "  - weave-network 생성 중..."
+            docker network create --driver overlay --attachable weave-network
+          else
+            echo "  - weave-network가 이미 존재합니다."
+          fi
+
+          # 새 이미지 풀
+          echo "새 이미지 다운로드 중..."
+          docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "  - 이미지 다운로드 완료"
+
+          # Docker Stack 배포 (Rolling Update)
+          echo "Docker Stack 배포 중..."
+          docker stack deploy -c docker-compose.yml weave --with-registry-auth
+
+          # 배포 완료 대기
+          echo "서비스 배포 대기 중..."
+          sleep 20
+
+          # 서비스 상태 확인
+          echo "서비스 상태 확인:"
+          docker service ls
+
+          # API 서비스 스케일링 확인
+          echo "API 서비스 레플리카 상태:"
+          docker service ps weave_api --format "table {{.Name}}\t{{.CurrentState}}\t{{.Error}}"
+
+          # API 컨테이너가 준비될 때까지 대기
+          echo "API 서비스 준비 대기 중..."
+          sleep 40
+
+          # 헬스 체크
+          echo "헬스 체크 수행 중..."
+          sleep 10
+
+          # Traefik을 통한 API 서비스 헬스 체크
+          if curl -f http://localhost/actuator/health > /dev/null 2>&1; then
+              echo "✅ API 서비스 정상 작동 (Traefik 경유)"
+          else
+              echo "❌ API 서비스 헬스 체크 실패"
+              echo "서비스 상태:"
+              docker service ps weave_api --no-trunc
+              echo ""
+              echo "API 서비스 로그:"
+              docker service logs weave_api --tail=30
+              exit 1
+          fi
+
+          echo ""
+          echo "=== ${{ env.ENVIRONMENT }} 환경 배포 완료 ==="
+          echo ""
+          echo "실행 중인 서비스:"
+          docker service ls
+
+          echo ""
+          echo "API 레플리카 상세 정보:"
+          docker service ps weave_api --format "table {{.Name}}\t{{.Node}}\t{{.CurrentState}}"
+
+          # 이미지 정리
+          echo ""
+          echo "오래된 이미지 정리 중..."
+          OLD_IMAGES=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep "$ECR_REGISTRY/$ECR_REPOSITORY" | grep -v "latest" | grep -v "$IMAGE_TAG" || true)
+          if [ ! -z "$OLD_IMAGES" ]; then
+            echo "$OLD_IMAGES" | xargs -r docker rmi > /dev/null 2>&1 || true
+            echo "  - 오래된 이미지 제거 완료"
+          else
+            echo "  - 제거할 오래된 이미지가 없습니다."
+          fi
+
+          # 최종 디스크 사용량
+          echo ""
+          echo "최종 디스크 사용량:"
+          df -h / | tail -1 | awk '{print "  사용량: " $3 "/" $2 " (" $5 ")"}'
+
+          echo ""
+          echo "🎉 Docker Swarm 배포 완료!"
+          echo "  - Traefik Dashboard: http://localhost:8081"
+          echo "  - API Health: http://localhost/actuator/health"
+          echo "  - API Swagger: http://localhost/swagger"
+          EOF
+
+          chmod +x deploy/deploy.sh
+
+      - name: Create SSH directory and key file
+        run: |
+          mkdir -p ~/.ssh
+          if [[ "${{ env.ENVIRONMENT }}" == "production" ]]; then
+            echo "${{ secrets.PROD_BASTION_SSH_KEY }}" > ~/.ssh/weave-prd-bastion-key.pem
+            echo "${{ secrets.PROD_PRIVATE_EC2_SSH_KEY }}" > ~/.ssh/weave-prd-private-key.pem
+          else
+            # 개발계는 기존 시크릿 사용
+            echo "${{ secrets.BASTION_SSH_KEY }}" > ~/.ssh/weave-dev-bastion-key.pem
+            echo "${{ secrets.PRIVATE_EC2_SSH_KEY }}" > ~/.ssh/weave-dev-private-key.pem
+          fi
+          chmod 600 ~/.ssh/weave-*-bastion-key.pem
+          chmod 600 ~/.ssh/weave-*-private-key.pem
+          ls -la ~/.ssh/
+
+      - name: Upload deployment files to Bastion
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.ENVIRONMENT == 'production' && secrets.PROD_BASTION_HOST || secrets.BASTION_HOST }}
+          username: ${{ env.ENVIRONMENT == 'production' && secrets.PROD_BASTION_USER || secrets.BASTION_USER }}
+          key: ${{ env.ENVIRONMENT == 'production' && secrets.PROD_BASTION_SSH_KEY || secrets.BASTION_SSH_KEY }}
+          port: 22
+          source: "deploy/*"
+          target: "~/deployment/"
+          strip_components: 1
+
+      - name: Deploy to EC2 via Bastion Host
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.ENVIRONMENT == 'production' && secrets.PROD_BASTION_HOST || secrets.BASTION_HOST }}
+          username: ${{ env.ENVIRONMENT == 'production' && secrets.PROD_BASTION_USER || secrets.BASTION_USER }}
+          key: ${{ env.ENVIRONMENT == 'production' && secrets.PROD_BASTION_SSH_KEY || secrets.BASTION_SSH_KEY }}
+          port: 22
+          script: |
+            # 환경별 변수 설정
+            if [[ "${{ env.ENVIRONMENT }}" == "production" ]]; then
+              PRIVATE_EC2_HOST="${{ secrets.PROD_PRIVATE_EC2_HOST }}"
+              PRIVATE_EC2_USER="${{ secrets.PROD_PRIVATE_EC2_USER }}"
+
+              # MongoDB
+              SPRING_DATA_MONGODB_URI="${{ secrets.PROD_SPRING_DATA_MONGODB_URI }}"
+              MONGODB_ROOT_PASSWORD="${{ secrets.PROD_MONGODB_ROOT_PASSWORD }}"
+
+              # Redis
+              REDIS_HOST="${{ secrets.PROD_REDIS_HOST }}"
+              REDIS_PORT="${{ secrets.PROD_REDIS_PORT }}"
+
+              # JWT
+              JWT_EXPIRATION="${{ secrets.PROD_JWT_EXPIRATION }}"
+              JWT_REFRESH_EXPIRATION="${{ secrets.PROD_JWT_REFRESH_EXPIRATION }}"
+              JWT_PRIVATE_KEY_PATH="${{ secrets.PROD_JWT_PRIVATE_KEY_PATH }}"
+              JWT_PUBLIC_KEY_PATH="${{ secrets.PROD_JWT_PUBLIC_KEY_PATH }}"
+
+              # OAuth
+              KAKAO_CLIENT_ID="${{ secrets.PROD_KAKAO_CLIENT_ID }}"
+              KAKAO_CLIENT_SECRET="${{ secrets.PROD_KAKAO_CLIENT_SECRET }}"
+              KAKAO_REDIRECT_URI="${{ secrets.PROD_KAKAO_REDIRECT_URI }}"
+              GOOGLE_CLIENT_ID="${{ secrets.PROD_GOOGLE_CLIENT_ID }}"
+              GOOGLE_CLIENT_SECRET="${{ secrets.PROD_GOOGLE_CLIENT_SECRET }}"
+              GOOGLE_REDIRECT_URI="${{ secrets.PROD_GOOGLE_REDIRECT_URI }}"
+
+              # Holiday API
+              HOLIDAY_API_KEY="${{ secrets.PROD_HOLIDAY_API_KEY }}"
+              HOLIDAY_API_BASE_URL="${{ secrets.PROD_HOLIDAY_API_BASE_URL }}"
+
+              # AWS
+              AWS_REGION="${{ secrets.PROD_AWS_REGION }}"
+              AWS_S3_BUCKET="${{ secrets.PROD_AWS_S3_BUCKET }}"
+              AWS_S3_PUBLIC_BASE_URL="${{ secrets.PROD_AWS_S3_PUBLIC_BASE_URL }}"
+              AWS_S3_UPLOAD_PREFIX="${{ secrets.PROD_AWS_S3_UPLOAD_PREFIX }}"
+
+              # Firebase
+              FIREBASE_CONFIG_PATH="${{ secrets.PROD_FIREBASE_CONFIG_PATH }}"
+
+              # Server
+              PORT="${{ secrets.PROD_PORT }}"
+            else
+              # 개발계는 기존 시크릿 사용
+              PRIVATE_EC2_HOST="${{ secrets.PRIVATE_EC2_HOST }}"
+              PRIVATE_EC2_USER="${{ secrets.PRIVATE_EC2_USER }}"
+
+              # MongoDB
+              SPRING_DATA_MONGODB_URI="${{ secrets.SPRING_DATA_MONGODB_URI }}"
+              MONGODB_ROOT_PASSWORD="${{ secrets.MONGODB_ROOT_PASSWORD }}"
+
+              # Redis
+              REDIS_HOST="${{ secrets.REDIS_HOST }}"
+              REDIS_PORT="${{ secrets.REDIS_PORT }}"
+
+              # JWT
+              JWT_EXPIRATION="${{ secrets.JWT_EXPIRATION }}"
+              JWT_REFRESH_EXPIRATION="${{ secrets.JWT_REFRESH_EXPIRATION }}"
+              JWT_PRIVATE_KEY_PATH="${{ secrets.JWT_PRIVATE_KEY_PATH }}"
+              JWT_PUBLIC_KEY_PATH="${{ secrets.JWT_PUBLIC_KEY_PATH }}"
+
+              # OAuth
+              KAKAO_CLIENT_ID="${{ secrets.KAKAO_CLIENT_ID }}"
+              KAKAO_CLIENT_SECRET="${{ secrets.KAKAO_CLIENT_SECRET }}"
+              KAKAO_REDIRECT_URI="${{ secrets.KAKAO_REDIRECT_URI }}"
+              GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
+              GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
+              GOOGLE_REDIRECT_URI="${{ secrets.GOOGLE_REDIRECT_URI }}"
+
+              # Holiday API
+              HOLIDAY_API_KEY="${{ secrets.HOLIDAY_API_KEY }}"
+              HOLIDAY_API_BASE_URL="${{ secrets.HOLIDAY_API_BASE_URL }}"
+
+              # AWS
+              AWS_REGION="${{ secrets.AWS_REGION }}"
+              AWS_S3_BUCKET="${{ secrets.AWS_S3_BUCKET }}"
+              AWS_S3_PUBLIC_BASE_URL="${{ secrets.AWS_S3_PUBLIC_BASE_URL }}"
+              AWS_S3_UPLOAD_PREFIX="${{ secrets.AWS_S3_UPLOAD_PREFIX }}"
+
+              # Firebase
+              FIREBASE_CONFIG_PATH="${{ secrets.FIREBASE_CONFIG_PATH }}"
+
+              # Server
+              PORT="${{ secrets.PORT }}"
+            fi
+
+            # 환경별 SSH 키 파일명 설정
+            if [[ "${{ env.ENVIRONMENT }}" == "production" ]]; then
+              PRIVATE_EC2_KEY="~/.ssh/weave-prd-private-key.pem"
+            else
+              PRIVATE_EC2_KEY="~/.ssh/weave-dev-private-key.pem"
+            fi
+
+            # Private EC2 SSH 키를 Bastion Host로 전송하고 권한 설정
+            echo "${{ env.ENVIRONMENT == 'production' && secrets.PROD_PRIVATE_EC2_SSH_KEY || secrets.PRIVATE_EC2_SSH_KEY }}" > ~/.ssh/weave-private-key.pem
+            chmod 600 ~/.ssh/weave-private-key.pem
+
+            # 배포 파일들을 프라이빗 EC2로 전송
+            scp -o StrictHostKeyChecking=no -i ~/.ssh/weave-private-key.pem \
+              ~/deployment/docker-compose.yml \
+              ~/deployment/.env \
+              ~/deployment/deploy.sh \
+              ${PRIVATE_EC2_USER}@${PRIVATE_EC2_HOST}:~/
+
+            # 프라이빗 EC2에서 배포 실행
+            ssh -o StrictHostKeyChecking=no -i ~/.ssh/weave-private-key.pem \
+              ${PRIVATE_EC2_USER}@${PRIVATE_EC2_HOST} \
+              "export ECR_REGISTRY=${{ env.ECR_REGISTRY }} && \
+               export IMAGE_TAG=${{ github.sha }} && \
+               export SPRING_DATA_MONGODB_URI=${SPRING_DATA_MONGODB_URI} && \
+               export MONGODB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD} && \
+               export REDIS_HOST=${REDIS_HOST} && \
+               export REDIS_PORT=${REDIS_PORT} && \
+               export JWT_EXPIRATION=${JWT_EXPIRATION} && \
+               export JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION} && \
+               export JWT_PRIVATE_KEY_PATH=${JWT_PRIVATE_KEY_PATH} && \
+               export JWT_PUBLIC_KEY_PATH=${JWT_PUBLIC_KEY_PATH} && \
+               export KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID} && \
+               export KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET} && \
+               export KAKAO_REDIRECT_URI=${KAKAO_REDIRECT_URI} && \
+               export GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID} && \
+               export GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET} && \
+               export GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI} && \
+               export HOLIDAY_API_KEY=${HOLIDAY_API_KEY} && \
+               export HOLIDAY_API_BASE_URL=${HOLIDAY_API_BASE_URL} && \
+               export AWS_REGION=${AWS_REGION} && \
+               export AWS_S3_BUCKET=${AWS_S3_BUCKET} && \
+               export AWS_S3_PUBLIC_BASE_URL=${AWS_S3_PUBLIC_BASE_URL} && \
+               export AWS_S3_UPLOAD_PREFIX=${AWS_S3_UPLOAD_PREFIX} && \
+               export FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH} && \
+               export PORT=${PORT} && \
+               chmod +x ~/deploy.sh && \
+               ~/deploy.sh"

@@ -1,0 +1,172 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.swarmMode=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=weave-network"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.rsocket.address=:7070"
+      - "--metrics.prometheus=true"
+      - "--accesslog=true"
+      - "--log.level=INFO"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "7070:7070"  # RSocket WebSocket
+      - "8081:8080"  # Traefik Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - weave-network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dashboard.rule=Host(`traefik.weave.local`)"
+        - "traefik.http.routers.dashboard.service=api@internal"
+        - "traefik.http.services.dashboard.loadbalancer.server.port=8080"
+
+  mongodb:
+    image: mongo:8.2
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=lovechedule
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - weave-network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  api:
+    image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+    environment:
+      # Spring Profile
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-production}
+
+      # MongoDB
+      - MONGODB_URI=${SPRING_DATA_MONGODB_URI}
+      - SPRING_DATA_MONGODB_URI=${SPRING_DATA_MONGODB_URI}
+
+      # Redis
+      - SPRING_DATA_REDIS_HOST=${REDIS_HOST:-redis}
+      - SPRING_DATA_REDIS_PORT=${REDIS_PORT:-6379}
+
+      # JWT
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-31536000000}
+      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION:-31536000000}
+      - JWT_PRIVATE_KEY_PATH=${JWT_PRIVATE_KEY_PATH:-}
+      - JWT_PUBLIC_KEY_PATH=${JWT_PUBLIC_KEY_PATH:-}
+
+      # OAuth - Kakao
+      - KAKAO_CLIENT_ID=${KAKAO_CLIENT_ID}
+      - KAKAO_CLIENT_SECRET=${KAKAO_CLIENT_SECRET}
+      - KAKAO_REDIRECT_URI=${KAKAO_REDIRECT_URI}
+
+      # OAuth - Google
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+
+      # Holiday API
+      - HOLIDAY_API_SERVICE_KEY=${HOLIDAY_API_KEY}
+      - HOLIDAY_API_BASE_URL=${HOLIDAY_API_BASE_URL:-https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService}
+
+      # AWS S3
+      - AWS_REGION=${AWS_REGION:-ap-northeast-2}
+      - AWS_S3_BUCKET=${AWS_S3_BUCKET:-lovechedule-s3}
+      - AWS_S3_PUBLIC_BASE_URL=${AWS_S3_PUBLIC_BASE_URL:-}
+      - AWS_S3_UPLOAD_PREFIX=${AWS_S3_UPLOAD_PREFIX:-uploads/}
+
+      # Firebase
+      - FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH:-weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json}
+
+      # Server
+      - PORT=${PORT:-8080}
+
+      # Timezone
+      - TZ=Asia/Seoul
+    networks:
+      - weave-network
+    deploy:
+      mode: replicated
+      replicas: 3
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+        order: start-first
+      rollback_config:
+        parallelism: 1
+        delay: 5s
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+      labels:
+        - "traefik.enable=true"
+        # HTTP 라우팅
+        - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/actuator`) || PathPrefix(`/swagger`)"
+        - "traefik.http.routers.api.entrypoints=web"
+        - "traefik.http.services.api.loadbalancer.server.port=8080"
+        - "traefik.http.services.api.loadbalancer.healthcheck.path=/actuator/health"
+        - "traefik.http.services.api.loadbalancer.healthcheck.interval=30s"
+        - "traefik.http.services.api.loadbalancer.healthcheck.timeout=10s"
+        # RSocket 라우팅
+        - "traefik.tcp.routers.rsocket.rule=HostSNI(`*`)"
+        - "traefik.tcp.routers.rsocket.entrypoints=rsocket"
+        - "traefik.tcp.services.rsocket.loadbalancer.server.port=7070"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+
+networks:
+  weave-network:
+    driver: overlay
+    attachable: true
