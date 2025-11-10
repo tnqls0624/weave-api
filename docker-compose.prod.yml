@@ -98,7 +98,7 @@ services:
     image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
     environment:
       # Spring Profile
-      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-production}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
 
       # MongoDB
       - MONGODB_URI=${SPRING_DATA_MONGODB_URI}

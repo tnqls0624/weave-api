@@ -2,7 +2,7 @@
 <configuration>
 
   <!-- 프로퍼티 설정 -->
-  <springProperty name="LOG_DIR" source="logging.file.path"/>
+  <springProperty name="LOG_DIR" source="logging.file.path" defaultValue="./logs"/>
   <springProperty name="SLACK_WEBHOOK" source="slack.webhook-uri"/>
   <springProperty name="SLACK_CHANNEL" source="slack.channel"/>
   <springProperty name="SLACK_USERNAME" source="slack.username"/>
@@ -33,6 +33,7 @@
     </rollingPolicy>
   </appender>
 
+  <!-- 프로파일별 설정 -->
   <springProfile name="local">
     <root level="DEBUG">
       <appender-ref ref="CONSOLE"/>
@@ -47,7 +48,7 @@
     </root>
   </springProfile>
 
-  <springProfile name="prod">
+  <springProfile name="prod | production">
     <root level="INFO">
       <appender-ref ref="CONSOLE"/>
       <appender-ref ref="FILE"/>
