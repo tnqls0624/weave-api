@@ -369,8 +369,8 @@ jobs:
             export AWS_S3_UPLOAD_PREFIX=${AWS_S3_UPLOAD_PREFIX}
             export FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH}
 
-            # .env 파일을 실제 값으로 재생성
-            cat > .env << 'ENVEOF'
+            # .env 파일을 실제 값으로 재생성 (따옴표 제거로 변수 치환 활성화)
+            cat > .env << ENVEOF
             ECR_REGISTRY=${{ env.ECR_REGISTRY }}
             ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}
             IMAGE_TAG=${{ github.sha }}
