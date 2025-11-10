@@ -64,7 +64,7 @@ jobs:
           SPRING_PROFILES_ACTIVE=${{ env.APP_ENV }}
 
           # MongoDB
-          SPRING_DATA_MONGODB_URI=\${SPRING_DATA_MONGODB_URI}
+          MONGODB_URI=\${MONGODB_URI}
           MONGODB_ROOT_PASSWORD=\${MONGODB_ROOT_PASSWORD}
 
           # Redis
@@ -161,13 +161,30 @@ jobs:
           docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "  - 이미지 다운로드 완료"
 
-          # Docker Stack 배포 (Rolling Update)
-          echo "Docker Stack 배포 중..."
-          docker stack deploy -c docker-compose.yml weave --with-registry-auth
+          # 인프라 서비스 확인 (없으면 생성)
+          echo "인프라 서비스 확인 중..."
+          if ! docker service ls | grep -q weave_traefik; then
+            echo "  - Traefik 생성"
+            docker stack deploy -c docker-compose.yml weave --with-registry-auth
+          fi
+          if ! docker service ls | grep -q weave_mongodb; then
+            echo "  - MongoDB 생성"
+            docker stack deploy -c docker-compose.yml weave --with-registry-auth
+          fi
+          if ! docker service ls | grep -q weave_redis; then
+            echo "  - Redis 생성"
+            docker stack deploy -c docker-compose.yml weave --with-registry-auth
+          fi
 
-          # 새 이미지로 API 서비스 강제 업데이트
-          echo "API 서비스 이미지 업데이트 중..."
-          docker service update --image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --force weave_api
+          # API 서비스만 업데이트 (기존 서비스가 있으면 이미지만 업데이트, 없으면 생성)
+          echo "API 서비스 업데이트 중..."
+          if docker service ls | grep -q weave_api; then
+            echo "  - 기존 API 서비스 이미지 업데이트"
+            docker service update --image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --force weave_api
+          else
+            echo "  - 새로운 API 서비스 생성"
+            docker stack deploy -c docker-compose.yml weave --with-registry-auth
+          fi
 
           # 배포 완료 대기
           echo "서비스 배포 대기 중..."
@@ -260,7 +277,7 @@ jobs:
             if [[ "${{ env.ENVIRONMENT }}" == "production" ]]; then
 
               # MongoDB
-              SPRING_DATA_MONGODB_URI="${{ secrets.PROD_SPRING_DATA_MONGODB_URI }}"
+              MONGODB_URI="${{ secrets.PROD_SPRING_DATA_MONGODB_URI }}"
               MONGODB_ROOT_PASSWORD="${{ secrets.PROD_MONGODB_ROOT_PASSWORD }}"
 
               # Redis
@@ -291,7 +308,7 @@ jobs:
               # 개발계는 기존 시크릿 사용
 
               # MongoDB
-              SPRING_DATA_MONGODB_URI="${{ secrets.SPRING_DATA_MONGODB_URI }}"
+              MONGODB_URI="${{ secrets.SPRING_DATA_MONGODB_URI }}"
               MONGODB_ROOT_PASSWORD="${{ secrets.MONGODB_ROOT_PASSWORD }}"
 
               # Redis
@@ -325,7 +342,7 @@ jobs:
 
             export ECR_REGISTRY=${{ env.ECR_REGISTRY }}
             export IMAGE_TAG=${{ github.sha }}
-            export SPRING_DATA_MONGODB_URI=${SPRING_DATA_MONGODB_URI}
+            export MONGODB_URI=${MONGODB_URI}
             export MONGODB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD}
             export REDIS_PASSWORD=${REDIS_PASSWORD}
             export JWT_EXPIRATION=${JWT_EXPIRATION}
