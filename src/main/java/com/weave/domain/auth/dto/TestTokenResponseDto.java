@@ -1,0 +1,17 @@
+package com.weave.domain.auth.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class TestTokenResponseDto {
+
+  private String accessToken;
+  private String expiresAt;
+  private String message;
+}
