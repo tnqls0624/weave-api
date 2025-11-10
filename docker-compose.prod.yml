@@ -65,6 +65,11 @@ services:
       placement:
         constraints:
           - node.role == manager
+    ports:
+      - target: 27017
+        published: 27017
+        protocol: tcp
+        mode: host
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 30s
