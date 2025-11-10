@@ -184,7 +184,7 @@ spring:
     mongodb:
       uri: ${MONGODB_URI} # 예: mongodb+srv://...  환경변수로 주입
 server:
-  port: ${PORT:8080}
+  port: 8080
 logging:
   file:
     path: /var/log/weave-api
