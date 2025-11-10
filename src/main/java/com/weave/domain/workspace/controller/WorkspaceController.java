@@ -2,8 +2,10 @@ package com.weave.domain.workspace.controller;
 
 import com.weave.domain.auth.service.AuthService;
 import com.weave.domain.workspace.dto.CreateWorkspaceRequestDto;
+import com.weave.domain.workspace.dto.UpdateParticipantColorRequestDto;
 import com.weave.domain.workspace.dto.UpdateWorkspaceRequestDto;
 import com.weave.domain.workspace.dto.WorkspaceResponseDto;
+import com.weave.domain.workspace.dto.WorkspaceScheduleResponseDto;
 import com.weave.domain.workspace.service.WorkspaceService;
 import com.weave.global.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -33,7 +36,7 @@ public class WorkspaceController {
   @SecurityRequirement(name = "JWT")
   @Tag(name = "WORKSPACE")
   @Operation(summary = "워크스페이스 생성")
-  @PostMapping("/")
+  @PostMapping
   public ApiResponse<WorkspaceResponseDto> create(@Valid @RequestBody CreateWorkspaceRequestDto dto,
       @AuthenticationPrincipal UserDetails userDetails) {
     return ApiResponse.ok(workspaceService.create(dto, userDetails.getUsername()));
@@ -52,8 +55,8 @@ public class WorkspaceController {
   // 워크스페이스 전부 찾기
   @SecurityRequirement(name = "JWT")
   @Tag(name = "WORKSPACE")
-  @Operation(summary = "워크스페이스 찾기")
-  @GetMapping("/")
+  @Operation(summary = "내가 소속 된 워크스페이스 전부 찾기")
+  @GetMapping
   public ApiResponse<WorkspaceResponseDto[]> find(
       @AuthenticationPrincipal UserDetails userDetails) {
     return ApiResponse.ok(workspaceService.find(userDetails.getUsername()));
@@ -68,5 +71,40 @@ public class WorkspaceController {
     return ApiResponse.ok(workspaceService.findById(id));
   }
 
+  // 워크스페이스 스케줄 조회
+  @SecurityRequirement(name = "JWT")
+  @Tag(name = "WORKSPACE")
+  @Operation(summary = "워크스페이스의 스케줄 찾기 (공휴일 포함)")
+  @GetMapping("/{id}/schedule/")
+  public ApiResponse<WorkspaceScheduleResponseDto> findWorkspaceSchedule(
+      @PathVariable("id") String id,
+      @RequestParam(value = "year", required = false) String year,
+      @RequestParam(value = "month", required = false) String month,
+      @RequestParam(value = "week", required = false) String week,
+      @RequestParam(value = "day", required = false) String day) {
+    return ApiResponse.ok(workspaceService.findWorkspaceSchedule(id, year, month, week, day));
+  }
+
+  // 참여자별 색상 지정
+  @SecurityRequirement(name = "JWT")
+  @Tag(name = "WORKSPACE")
+  @Operation(summary = "워크스페이스 참여자별 스케줄 태그 색상 설정",
+      description = "각 참여자의 스케줄에 표시될 태그 색상을 지정합니다. userId를 key로, 색상 코드(#RRGGBB)를 value로 전달합니다.")
+  @PutMapping("/{id}/participant-colors")
+  public ApiResponse<WorkspaceResponseDto> updateParticipantColors(
+      @PathVariable("id") String id,
+      @Valid @RequestBody UpdateParticipantColorRequestDto dto) {
+    return ApiResponse.ok(workspaceService.updateParticipantColors(id, dto.getParticipantColors()));
+  }
+
+  // 워크스페이스 이번년도 피드 스케줄 조회
+  @SecurityRequirement(name = "JWT")
+  @Tag(name = "WORKSPACE")
+  @Operation(summary = "워크스페이스의 피드 스케줄 찾기)")
+  @GetMapping("/{id}/schedule/feed")
+  public ApiResponse<WorkspaceScheduleResponseDto> findWorkspaceScheduleFeed(
+      @PathVariable("id") String id, @AuthenticationPrincipal UserDetails userDetails) {
+    return ApiResponse.ok(workspaceService.findWorkspaceScheduleFeed(id, userDetails));
+  }
 
 }

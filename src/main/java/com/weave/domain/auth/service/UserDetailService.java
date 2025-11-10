@@ -1,8 +1,8 @@
 package com.weave.domain.auth.service;
 
+import com.google.common.collect.ImmutableList;
 import com.weave.domain.auth.repository.AuthRepository;
 import com.weave.domain.user.entity.User;
-import java.util.Collections;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,7 +24,7 @@ public class UserDetailService implements UserDetailsService {
     return new org.springframework.security.core.userdetails.User(
         user.getEmail(),
         user.getPassword() == null ? "" : user.getPassword(),
-        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+        ImmutableList.of(new SimpleGrantedAuthority("ROLE_USER"))
     );
   }
 }

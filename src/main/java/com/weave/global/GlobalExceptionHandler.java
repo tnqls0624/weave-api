@@ -2,6 +2,7 @@ package com.weave.global;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
 import java.util.Map;
@@ -10,6 +11,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -31,7 +33,7 @@ public class GlobalExceptionHandler {
       HttpServletRequest req) {
     Map<String, String> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
         .collect(Collectors.toMap(
-            fe -> fe.getField(),
+            FieldError::getField,
             fe -> fe.getDefaultMessage() == null ? "invalid" : fe.getDefaultMessage(),
             (a, b) -> a
         ));
@@ -49,7 +51,7 @@ public class GlobalExceptionHandler {
     Map<String, String> errors = ex.getConstraintViolations().stream()
         .collect(Collectors.toMap(
             v -> v.getPropertyPath().toString(),
-            v -> v.getMessage(),
+            ConstraintViolation::getMessage,
             (a, b) -> a
         ));
     return ResponseEntity

@@ -16,7 +16,6 @@ import org.bson.types.ObjectId;
 @AllArgsConstructor
 public class ScheduleResponseDto {
 
-  @JsonProperty("_id")
   private String id;
 
   private String title;
@@ -28,9 +27,6 @@ public class ScheduleResponseDto {
 
   @JsonProperty("end_date")
   private String endDate;
-
-  @JsonProperty("is_anniversary")
-  private Boolean isAnniversary;
 
   @JsonProperty("repeat_type")
   private String repeatType;
@@ -49,9 +45,8 @@ public class ScheduleResponseDto {
         .memo(schedule.getMemo())
         .startDate(schedule.getStartDate())
         .endDate(schedule.getEndDate())
-        .isAnniversary(schedule.getIsAnniversary())
-        .repeatType(schedule.getRepeatType().getValue())
-        .calendarType(schedule.getCalendarType().getValue())
+        .repeatType(schedule.getRepeatType())
+        .calendarType(schedule.getCalendarType())
         .participants(schedule.getParticipants() != null
             ? schedule.getParticipants().stream()
             .map(ObjectId::toString)

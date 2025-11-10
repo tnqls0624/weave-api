@@ -49,20 +49,14 @@ public class User {
   private String thumbnailImage;
 
   @Field("fcm_token")
-  @Indexed(unique = true)
+  @Indexed(unique = true, sparse = true)
   private String fcmToken;
 
   @Field("push_enabled")
   @Builder.Default
   private boolean pushEnabled = true;
 
-  @Field("schedule_alarm")
-  @Builder.Default
-  private boolean scheduleAlarm = true;
-
-  @Field("anniversary_alarm")
-  @Builder.Default
-  private boolean anniversaryAlarm = true;
+  private String avatarUrl;
 
   @CreatedDate
   private Date createdAt;

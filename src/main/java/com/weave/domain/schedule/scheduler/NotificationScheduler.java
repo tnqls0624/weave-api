@@ -24,12 +24,11 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class NotificationScheduler {
 
+  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(
+      "yyyy-MM-dd HH:mm:ss");
   private final ScheduleRepository scheduleRepository;
   private final UserRepository userRepository;
   private final NotificationService notificationService;
-
-  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(
-      "yyyy-MM-dd HH:mm:ss");
 
   /**
    * 매일 오전 9시에 오늘의 일정 알림 발송 - 모든 워크스페이스의 오늘 일정 조회 - 각 참여자에게 알림 발송
@@ -65,7 +64,7 @@ public class NotificationScheduler {
       }
 
       // 일정 알림 설정이 켜져있는 유저에게만 알림 발송
-      if (user.isScheduleAlarm()) {
+      if (user.isPushEnabled()) {
         sendScheduleNotification(user, userSchedules);
       }
     }
@@ -101,7 +100,7 @@ public class NotificationScheduler {
     String body;
 
     if (schedules.size() == 1) {
-      body = String.format("'%s' 일정이 오늘 있습니다.", schedules.get(0).getTitle());
+      body = String.format("'%s' 일정이 오늘 있습니다.", schedules.getFirst().getTitle());
     } else {
       String scheduleTitles = schedules.stream()
           .limit(3)

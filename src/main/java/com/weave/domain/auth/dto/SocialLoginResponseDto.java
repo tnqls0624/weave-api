@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class SocialLoginResponseDto {
 
   private String accessToken;
+  private String refreshToken;
 }

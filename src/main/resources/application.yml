@@ -20,12 +20,20 @@ spring:
   data:
     mongodb:
       uri: mongodb://root:1234@localhost:27017/lovechedule?authSource=admin
-      auto-index-creation: false
+      auto-index-creation: true
+    redis:
+      host: localhost
+      port: 6379
 
-  web:
-    mvc:
-      servlet:
-        path: /api
+  mvc:
+    servlet:
+      path: /api
+
+  rsocket:
+    server:
+      port: 7070
+      transport: websocket
+      mapping-path: /rsocket
 
 #  web:
 #    cors:
@@ -46,19 +54,25 @@ server:
 # =========================
 # 보안/JWT 예시 (값은 환경변수로 주입 권장)
 # =========================
-security:
-  jwt:
-    issuer: weave
-    access-token-ttl-minutes: 60
-    # 실제 비밀키는 환경변수로: SECURITY_JWT_SECRET
-    # application.yml에는 적지 마세요
-    # secret: ${SECURITY_JWT_SECRET:change-me}
+jwt:
+  expiration: 31536000000 # 1년 (365일 * 24시간 * 60분 * 60초 * 1000ms)
+  refresh-expiration: 31536000000 # 1년
+  private-key-path: # 비워두면 자동 생성
+  public-key-path: # 비워두면 자동 생성
 
 # =========================
 # Firebase Cloud Messaging
 # =========================
 firebase:
-  config-path: firebase-service-account.json
+  config-path: weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json
+
+# =========================
+# Holiday API
+# =========================
+holiday:
+  api:
+    service-key: HKTCByhZ2hJ6CAHKsSkFWkbbKnzP%2BgvJCgusOEqNAIiR1rTnkeu7ZxUaBFm31FXfOlYLPudEniZJTbYGDw%2FrVw%3D%3D
+    base-url: https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService
 
 # =========================
 # springdoc-openapi (Swagger UI)
@@ -70,6 +84,18 @@ springdoc:
     path: /swagger
     display-request-duration: true
     operations-sorter: method
+
+# =========================
+# AWS / S3
+# =========================
+aws:
+  # 리전은 버킷이 생성된 리전과 동일하게 설정하세요. 예: ap-northeast-2 (서울)
+  region: ${AWS_REGION:ap-northeast-2}
+  s3:
+    bucket: ${AWS_S3_BUCKET:lovechedule-s3}
+    public-base-url: ${AWS_S3_PUBLIC_BASE_URL:}
+    upload-prefix: ${AWS_S3_UPLOAD_PREFIX:${AWS_S3_UPLOAD_PATH:uploads/}}
+
 
 # =========================
 # Actuator / Micrometer (Prometheus)

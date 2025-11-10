@@ -38,3 +38,22 @@ out/
 
 ### logs ###
 logs
+
+### security ###
+*firebase-adminsdk-*.json
+*.jks
+*.p12
+*.jceks
+secrets.properties
+*.pem
+*.crt
+*.key
+*.env
+### OS generated files ###
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+### JWT Keys (로컬 개발용) ###
+keys/
