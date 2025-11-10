@@ -165,6 +165,10 @@ jobs:
           echo "Docker Stack 배포 중..."
           docker stack deploy -c docker-compose.yml weave --with-registry-auth
 
+          # 새 이미지로 API 서비스 강제 업데이트
+          echo "API 서비스 이미지 업데이트 중..."
+          docker service update --image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --force weave_api
+
           # 배포 완료 대기
           echo "서비스 배포 대기 중..."
           sleep 20
