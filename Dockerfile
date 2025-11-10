@@ -28,8 +28,9 @@ RUN apk add --no-cache curl
 # 빌드된 JAR 파일 복사
 COPY --from=builder /app/build/libs/*.jar app.jar
 
-# 로그 디렉토리 생성
-RUN mkdir -p /var/log/weave-api && chown -R spring:spring /var/log/weave-api
+# 로그 디렉토리 생성 (root로 생성 후 spring 유저에게 권한 부여)
+RUN mkdir -p /app/logs /var/log/weave-api && \
+    chown -R spring:spring /app/logs /var/log/weave-api
 
 # 사용자 전환
 USER spring:spring
