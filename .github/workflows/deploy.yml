@@ -68,8 +68,7 @@ jobs:
           MONGODB_ROOT_PASSWORD=\${MONGODB_ROOT_PASSWORD}
 
           # Redis
-          REDIS_HOST=\${REDIS_HOST}
-          REDIS_PORT=\${REDIS_PORT}
+          REDIS_PASSWORD=\${REDIS_PASSWORD}
 
           # JWT
           JWT_EXPIRATION=\${JWT_EXPIRATION}
@@ -269,8 +268,7 @@ jobs:
               MONGODB_ROOT_PASSWORD="${{ secrets.PROD_MONGODB_ROOT_PASSWORD }}"
 
               # Redis
-              REDIS_HOST="${{ secrets.PROD_REDIS_HOST }}"
-              REDIS_PORT="${{ secrets.PROD_REDIS_PORT }}"
+              REDIS_PASSWORD="${{ secrets.PROD_REDIS_PASSWORD }}"
 
               # JWT
               JWT_EXPIRATION="${{ secrets.PROD_JWT_EXPIRATION }}"
@@ -311,8 +309,7 @@ jobs:
               MONGODB_ROOT_PASSWORD="${{ secrets.MONGODB_ROOT_PASSWORD }}"
 
               # Redis
-              REDIS_HOST="${{ secrets.REDIS_HOST }}"
-              REDIS_PORT="${{ secrets.REDIS_PORT }}"
+              REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}"
 
               # JWT
               JWT_EXPIRATION="${{ secrets.JWT_EXPIRATION }}"
@@ -370,8 +367,7 @@ jobs:
                export IMAGE_TAG=${{ github.sha }} && \
                export SPRING_DATA_MONGODB_URI=${SPRING_DATA_MONGODB_URI} && \
                export MONGODB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD} && \
-               export REDIS_HOST=${REDIS_HOST} && \
-               export REDIS_PORT=${REDIS_PORT} && \
+               export REDIS_PASSWORD=${REDIS_PASSWORD} && \
                export JWT_EXPIRATION=${JWT_EXPIRATION} && \
                export JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION} && \
                export JWT_PRIVATE_KEY_PATH=${JWT_PRIVATE_KEY_PATH} && \
