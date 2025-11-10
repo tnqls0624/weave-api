@@ -158,26 +158,47 @@ jobs:
           docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "  - 이미지 다운로드 완료"
 
-          # 인프라 서비스 확인 (없으면 생성)
+          # 인프라 서비스 확인 및 강제 업데이트 옵션
           echo "인프라 서비스 확인 중..."
+
+          # Traefik 확인 및 업데이트
           if ! docker service ls | grep -q weave_traefik; then
             echo "  - Traefik 생성"
             docker stack deploy -c docker-compose.yml weave --with-registry-auth
+          elif [ "$FORCE_UPDATE_TRAEFIK" = "true" ]; then
+            echo "  - Traefik 강제 업데이트"
+            docker service update --force weave_traefik
           fi
+
+          # MongoDB 확인 및 업데이트
           if ! docker service ls | grep -q weave_mongodb; then
             echo "  - MongoDB 생성"
             docker stack deploy -c docker-compose.yml weave --with-registry-auth
+          elif [ "$FORCE_UPDATE_MONGODB" = "true" ]; then
+            echo "  - MongoDB 강제 업데이트 (이미지: mongo:7.0)"
+            docker service update --image mongo:7.0 --force weave_mongodb
           fi
+
+          # Redis 확인 및 업데이트
           if ! docker service ls | grep -q weave_redis; then
             echo "  - Redis 생성"
             docker stack deploy -c docker-compose.yml weave --with-registry-auth
+          elif [ "$FORCE_UPDATE_REDIS" = "true" ]; then
+            echo "  - Redis 강제 업데이트"
+            docker service update --force weave_redis
           fi
 
-          # API 서비스만 업데이트 (기존 서비스가 있으면 이미지만 업데이트, 없으면 생성)
+          # API 서비스 업데이트 (항상 최신 이미지로)
           echo "API 서비스 업데이트 중..."
+          echo "  - 이미지: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
           if docker service ls | grep -q weave_api; then
             echo "  - 기존 API 서비스 이미지 업데이트"
-            docker service update --image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --force weave_api
+            docker service update \
+              --image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+              --with-registry-auth \
+              --force \
+              weave_api
           else
             echo "  - 새로운 API 서비스 생성"
             docker stack deploy -c docker-compose.yml weave --with-registry-auth
