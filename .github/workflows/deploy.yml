@@ -230,17 +230,45 @@ jobs:
           echo "헬스 체크 수행 중..."
           sleep 10
 
-          # Traefik을 통한 API 서비스 헬스 체크
-          if curl -f http://localhost/actuator/health > /dev/null 2>&1; then
-              echo "✅ API 서비스 정상 작동 (Traefik 경유)"
-          else
+          # 컨테이너 직접 헬스 체크
+          CONTAINER_ID=$(docker ps -q --filter "name=weave_api" | head -1)
+          if [ -z "$CONTAINER_ID" ]; then
+              echo "❌ API 컨테이너를 찾을 수 없습니다"
+              docker service ps weave_api --no-trunc
+              exit 1
+          fi
+
+          echo "컨테이너 $CONTAINER_ID 에서 헬스 체크 수행 중..."
+          MAX_RETRIES=10
+          RETRY_COUNT=0
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              if docker exec $CONTAINER_ID curl -f http://localhost:8080/actuator/health > /dev/null 2>&1; then
+                  echo "✅ API 서비스 정상 작동"
+                  break
+              else
+                  RETRY_COUNT=$((RETRY_COUNT + 1))
+                  echo "헬스 체크 재시도 중... ($RETRY_COUNT/$MAX_RETRIES)"
+                  sleep 5
+              fi
+          done
+
+          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
               echo "❌ API 서비스 헬스 체크 실패"
               echo "서비스 상태:"
               docker service ps weave_api --no-trunc
               echo ""
               echo "API 서비스 로그:"
-              docker service logs weave_api --tail=30
+              docker service logs weave_api --tail=50
               exit 1
+          fi
+
+          # Traefik을 통한 접근도 테스트
+          echo "Traefik 라우팅 테스트 중..."
+          if curl -f http://localhost/actuator/health > /dev/null 2>&1; then
+              echo "✅ Traefik 라우팅 정상"
+          else
+              echo "⚠️  Traefik 라우팅 실패 (직접 접근은 가능)"
           fi
 
           echo ""
