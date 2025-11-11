@@ -102,7 +102,12 @@ jobs:
           # .env 파일 로드
           if [ -f .env ]; then
             echo ".env 파일 로드 중..."
-            export $(cat .env | grep -v '^#' | xargs)
+            set -a
+            source .env
+            set +a
+            echo "환경 변수 로드 완료"
+            echo "MONGODB_URI: $MONGODB_URI"
+            echo "ECR_REGISTRY: $ECR_REGISTRY"
           else
             echo "❌ .env 파일을 찾을 수 없습니다."
             exit 1
@@ -148,6 +153,8 @@ jobs:
           echo "  ECR_REGISTRY: $ECR_REGISTRY"
           echo "  ECR_REPOSITORY: $ECR_REPOSITORY"
           echo "  IMAGE_TAG: $IMAGE_TAG"
+          echo "  MONGODB_URI: $MONGODB_URI"
+          echo "  REDIS_PASSWORD: [MASKED]"
 
           # 새 이미지 풀
           echo "새 이미지 다운로드 중..."
@@ -199,10 +206,6 @@ jobs:
           # API 서비스 업데이트 (항상 최신 이미지로)
           echo "API 서비스 업데이트 중..."
           echo "  - 이미지: $FULL_IMAGE"
-
-          # ECR 재인증 (서비스 업데이트 직전)
-          echo "  - ECR 재인증 중..."
-          aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin $ECR_REGISTRY
 
           if docker service ls | grep -q weave_api; then
             echo "  - 기존 API 서비스 이미지 업데이트"

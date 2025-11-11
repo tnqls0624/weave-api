@@ -104,7 +104,8 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
 
       # MongoDB
-      - SPRING_DATA_MONGODB_URI=${MONGODB_URI}
+      - SPRING_DATA_MONGODB_URI=${MONGODB_URI:-mongodb://root:1234@mongodb:27017/lovechedule?authSource=admin}
+      - MONGODB_URI=${MONGODB_URI:-mongodb://root:1234@mongodb:27017/lovechedule?authSource=admin}
 
       # Redis
       - SPRING_DATA_REDIS_HOST=redis
