@@ -187,6 +187,11 @@ spring:
       host: ${SPRING_DATA_REDIS_HOST:redis}
       port: ${SPRING_DATA_REDIS_PORT:6379}
       password: ${SPRING_DATA_REDIS_PASSWORD:}
+jwt:
+  expiration: ${JWT_EXPIRATION:31536000000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:31536000000}
+  private-key-path:
+  public-key-path:
 server:
   port: 8080
 logging:

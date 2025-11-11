@@ -133,6 +133,8 @@ services:
 
       # Timezone
       - TZ=Asia/Seoul
+    volumes:
+      - jwt_keys:/app/keys
     networks:
       - weave-network
     deploy:
@@ -177,6 +179,8 @@ volumes:
   mongodb_config:
     driver: local
   redis_data:
+    driver: local
+  jwt_keys:
     driver: local
 
 networks:
