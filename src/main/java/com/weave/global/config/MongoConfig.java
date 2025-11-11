@@ -21,8 +21,7 @@ public class MongoConfig {
         log.info("=".repeat(80));
         log.info("MongoDB Configuration");
         log.info("=".repeat(80));
-        log.info("MongoDB URI (masked): {}", maskedUri);
-        log.info("MongoDB URI (full): {}", mongoUri);
+        log.info("MongoDB URI: {}", maskedUri);
         log.info("=".repeat(80));
     }
 }

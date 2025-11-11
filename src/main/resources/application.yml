@@ -182,7 +182,11 @@ spring:
       on-profile: prod
   data:
     mongodb:
-      uri: ${MONGODB_URI}
+      uri: ${SPRING_DATA_MONGODB_URI:${MONGODB_URI}}
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:redis}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
 server:
   port: 8080
 logging:
