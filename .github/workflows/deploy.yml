@@ -218,8 +218,9 @@ jobs:
               --env-add SPRING_DATA_MONGODB_URI="$MONGODB_URI" \
               --env-add MONGODB_URI="$MONGODB_URI" \
               --env-add MONGODB_ROOT_PASSWORD="$MONGODB_ROOT_PASSWORD" \
+              --env-add SPRING_DATA_REDIS_HOST="redis" \
+              --env-add SPRING_DATA_REDIS_PORT="6379" \
               --env-add SPRING_DATA_REDIS_PASSWORD="$REDIS_PASSWORD" \
-              --env-add REDIS_PASSWORD="$REDIS_PASSWORD" \
               --env-add JWT_EXPIRATION="$JWT_EXPIRATION" \
               --env-add JWT_REFRESH_EXPIRATION="$JWT_REFRESH_EXPIRATION" \
               --env-add HOLIDAY_API_SERVICE_KEY="$HOLIDAY_API_KEY" \

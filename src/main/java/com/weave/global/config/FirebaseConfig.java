@@ -24,7 +24,14 @@ public class FirebaseConfig {
   public void initialize() {
     try {
       if (FirebaseApp.getApps().isEmpty()) {
-        InputStream serviceAccount = new ClassPathResource(firebaseConfigPath).getInputStream();
+        // Firebase 설정 파일이 없으면 초기화 생략
+        ClassPathResource resource = new ClassPathResource(firebaseConfigPath);
+        if (!resource.exists()) {
+          log.warn("Firebase config file not found: {}. Skipping Firebase initialization.", firebaseConfigPath);
+          return;
+        }
+
+        InputStream serviceAccount = resource.getInputStream();
 
         FirebaseOptions options = FirebaseOptions.builder()
             .setCredentials(GoogleCredentials.fromStream(serviceAccount))
