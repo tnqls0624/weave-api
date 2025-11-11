@@ -4,6 +4,8 @@ import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -21,6 +23,10 @@ public class SwaggerConfig {
         .bearerFormat("JWT")
     );
     return new OpenAPI()
+        .servers(List.of(
+            new Server().url("https://api.weave.io.kr").description("Production Server"),
+            new Server().url("http://localhost:8080").description("Local Development")
+        ))
         .components(new Components())
         .info(apiInfo())
 //                .addSecurityItem(securityRequirement)

@@ -155,13 +155,14 @@ services:
         window: 120s
       labels:
         - "traefik.enable=true"
-        # CORS 미들웨어 정의 (kebab-case 사용)
+        # CORS 미들웨어 정의
         - "traefik.http.middlewares.api-cors.headers.accessControlAllowMethods=GET,POST,PUT,PATCH,DELETE,OPTIONS"
-        - "traefik.http.middlewares.api-cors.headers.accessControlAllowOriginList=*"
+        - "traefik.http.middlewares.api-cors.headers.accessControlAllowOriginListRegex=.*"
         - "traefik.http.middlewares.api-cors.headers.accessControlAllowHeaders=*"
         - "traefik.http.middlewares.api-cors.headers.accessControlExposeHeaders=Authorization,Content-Type"
         - "traefik.http.middlewares.api-cors.headers.accessControlAllowCredentials=true"
         - "traefik.http.middlewares.api-cors.headers.accessControlMaxAge=3600"
+        - "traefik.http.middlewares.api-cors.headers.addVaryHeader=true"
         # HTTP 라우팅 (CORS 미들웨어 적용)
         - "traefik.http.routers.api.rule=PathPrefix(`/`) || PathPrefix(`/api`) || PathPrefix(`/actuator`) || PathPrefix(`/swagger`) || PathPrefix(`/health`)"
         - "traefik.http.routers.api.entrypoints=web"
