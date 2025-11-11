@@ -24,8 +24,8 @@ public class SwaggerConfig {
     );
     return new OpenAPI()
         .servers(List.of(
-            new Server().url("https://api.weave.io.kr").description("Production Server"),
-            new Server().url("http://localhost:8080").description("Local Development")
+            new Server().url("https://api.weave.io.kr/api").description("Production Server"),
+            new Server().url("http://localhost:8080/api").description("Local Development")
         ))
         .components(new Components())
         .info(apiInfo())
