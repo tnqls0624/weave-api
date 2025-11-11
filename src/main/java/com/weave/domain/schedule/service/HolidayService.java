@@ -55,11 +55,16 @@ public class HolidayService {
 
   public void fetchAndCacheYearData(int year) {
     String cacheKey = "calendar:" + year;
-    Object cachedData = redisTemplate.opsForValue().get(cacheKey);
 
-    if (cachedData != null) {
-      log.info("Data for year {} is already cached", year);
-      return;
+    try {
+      Object cachedData = redisTemplate.opsForValue().get(cacheKey);
+
+      if (cachedData != null) {
+        log.info("Data for year {} is already cached", year);
+        return;
+      }
+    } catch (Exception e) {
+      log.warn("Failed to check Redis cache for year {}. Proceeding without cache: {}", year, e.getMessage());
     }
 
     try {
@@ -100,8 +105,12 @@ public class HolidayService {
       }
 
       if (!holidays.isEmpty()) {
-        redisTemplate.opsForValue().set(cacheKey, holidays);
-        log.info("Data for year {} cached successfully with {} holidays", year, holidays.size());
+        try {
+          redisTemplate.opsForValue().set(cacheKey, holidays);
+          log.info("Data for year {} cached successfully with {} holidays", year, holidays.size());
+        } catch (Exception e) {
+          log.warn("Failed to cache holidays for year {} in Redis: {}", year, e.getMessage());
+        }
       } else {
         log.warn("No holidays found for year {}", year);
       }

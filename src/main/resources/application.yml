@@ -103,6 +103,7 @@ aws:
 management:
   endpoints:
     web:
+      base-path: /actuator
       exposure:
         include: health,info,metrics,prometheus,threaddump,heapdump
   endpoint:
