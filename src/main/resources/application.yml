@@ -182,7 +182,7 @@ spring:
       on-profile: prod
   data:
     mongodb:
-      uri: ${MONGODB_URI} # 예: mongodb+srv://...  환경변수로 주입
+      uri: ${MONGODB_URI}
 server:
   port: 8080
 logging:
