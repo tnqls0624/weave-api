@@ -92,6 +92,9 @@ public class AuthService {
       throw new BusinessException(ErrorCode.INTERNAL_ERROR, "소셜 로그인 처리 중 오류가 발생했습니다.");
     }
 
+    log.info("Social login - id: {}, email: '{}', inviteCode: {}", user.getId(), user.getEmail(),
+        inviteCode);
+
     String accessToken = jwtTokenProvider.createToken(user.getEmail());
     String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
 
