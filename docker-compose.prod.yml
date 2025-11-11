@@ -166,12 +166,6 @@ services:
         - "traefik.tcp.routers.rsocket.rule=HostSNI(`*`)"
         - "traefik.tcp.routers.rsocket.entrypoints=rsocket"
         - "traefik.tcp.services.rsocket.loadbalancer.server.port=7070"
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
 volumes:
   mongodb_data:
