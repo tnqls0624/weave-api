@@ -202,7 +202,6 @@ jobs:
           echo "API 서비스 업데이트 중..."
           echo "  - 이미지: $FULL_IMAGE"
 
-<<<<<<< Updated upstream
           # ECR 재인증 (서비스 업데이트 직전)
           echo "  - ECR 재인증 중..."
           aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin $ECR_REGISTRY
@@ -210,22 +209,6 @@ jobs:
           # docker stack으로 전체 스택 재배포 (환경변수 업데이트 포함)
           echo "  - Docker Stack 재배포 중..."
           docker stack deploy -c docker-compose.yml weave --with-registry-auth --prune
-=======
-          if docker service ls | grep -q weave_api; then
-            echo "  - 기존 API 서비스 이미지 업데이트 (환경변수 직접 주입)"
-            docker service update \
-              --image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-              --env-add SPRING_DATA_MONGODB_URI="$MONGODB_URI" \
-              --env-add SPRING_DATA_REDIS_PASSWORD="$REDIS_PASSWORD" \
-              --env-add HOLIDAY_API_SERVICE_KEY="$HOLIDAY_API_KEY" \
-              --with-registry-auth \
-              --force \
-              weave_api
-          else
-            echo "  - 새로운 API 서비스 생성"
-            docker stack deploy -c docker-compose.yml weave --with-registry-auth
-          fi
->>>>>>> Stashed changes
 
           # 배포 완료 대기
           echo "서비스 배포 대기 중..."
