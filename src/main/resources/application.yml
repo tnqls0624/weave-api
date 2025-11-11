@@ -31,7 +31,6 @@ spring:
 
   rsocket:
     server:
-      port: 8080
       transport: websocket
       mapping-path: /rsocket
 
