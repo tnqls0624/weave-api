@@ -156,7 +156,7 @@ services:
       labels:
         - "traefik.enable=true"
         # HTTP 라우팅
-        - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/actuator`) || PathPrefix(`/swagger`)"
+        - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/swagger`)"
         - "traefik.http.routers.api.entrypoints=web"
         - "traefik.http.services.api.loadbalancer.server.port=8080"
         # RSocket 라우팅
