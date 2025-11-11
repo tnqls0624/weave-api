@@ -211,28 +211,9 @@ jobs:
           echo "  - ECR 재인증 중..."
           aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin $ECR_REGISTRY
 
-          if docker service ls | grep -q weave_api; then
-            echo "  - 기존 API 서비스 이미지 업데이트"
-            docker service update \
-              --image $FULL_IMAGE \
-              --env-add SPRING_DATA_MONGODB_URI="$MONGODB_URI" \
-              --env-add MONGODB_URI="$MONGODB_URI" \
-              --env-add MONGODB_ROOT_PASSWORD="$MONGODB_ROOT_PASSWORD" \
-              --env-add SPRING_DATA_REDIS_HOST="redis" \
-              --env-add SPRING_DATA_REDIS_PORT="6379" \
-              --env-add SPRING_DATA_REDIS_PASSWORD="$REDIS_PASSWORD" \
-              --env-add JWT_EXPIRATION="$JWT_EXPIRATION" \
-              --env-add JWT_REFRESH_EXPIRATION="$JWT_REFRESH_EXPIRATION" \
-              --env-add HOLIDAY_API_SERVICE_KEY="$HOLIDAY_API_KEY" \
-              --env-add AWS_REGION="$AWS_REGION" \
-              --env-add AWS_S3_BUCKET="$AWS_S3_BUCKET" \
-              --with-registry-auth \
-              --force \
-              weave_api
-          else
-            echo "  - 새로운 API 서비스 생성"
-            docker stack deploy -c docker-compose.yml weave --with-registry-auth
-          fi
+          # docker stack으로 전체 스택 재배포 (환경변수 업데이트 포함)
+          echo "  - Docker Stack 재배포 중..."
+          docker stack deploy -c docker-compose.yml weave --with-registry-auth --prune
 
           # 배포 완료 대기
           echo "서비스 배포 대기 중..."
