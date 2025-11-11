@@ -155,10 +155,6 @@ services:
         window: 120s
       labels:
         - "traefik.enable=true"
-<<<<<<< Updated upstream
-        # HTTP 라우팅
-        - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/swagger`) || PathPrefix(`/health`) || PathPrefix(`/actuator`)"
-=======
         # CORS 미들웨어 정의
         - "traefik.http.middlewares.api-cors.headers.accesscontrolallowmethods=GET,POST,PUT,PATCH,DELETE,OPTIONS"
         - "traefik.http.middlewares.api-cors.headers.accesscontrolalloworiginlist=*"
@@ -167,8 +163,7 @@ services:
         - "traefik.http.middlewares.api-cors.headers.accesscontrolallowcredentials=true"
         - "traefik.http.middlewares.api-cors.headers.accesscontrolmaxage=3600"
         # HTTP 라우팅 (CORS 미들웨어 적용)
-        - "traefik.http.routers.api.rule=PathPrefix(`/`) || PathPrefix(`/api`) || PathPrefix(`/actuator`) || PathPrefix(`/swagger`) || PathPrefix(`/v3/api-docs`)"
->>>>>>> Stashed changes
+        - "traefik.http.routers.api.rule=PathPrefix(`/`) || PathPrefix(`/api`) || PathPrefix(`/actuator`) || PathPrefix(`/swagger`) || PathPrefix(`/health`)"
         - "traefik.http.routers.api.entrypoints=web"
         - "traefik.http.routers.api.middlewares=api-cors"
         - "traefik.http.services.api.loadbalancer.server.port=8080"

@@ -380,7 +380,6 @@ jobs:
             ECR_REPOSITORY=${{ env.ECR_REPOSITORY }}
             IMAGE_TAG=${{ github.sha }}
             SPRING_PROFILES_ACTIVE=prod
-<<<<<<< Updated upstream
             MONGODB_URI=${MONGODB_URI}
             MONGODB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD}
             REDIS_PASSWORD=${REDIS_PASSWORD}
@@ -395,16 +394,6 @@ jobs:
             AWS_S3_PUBLIC_BASE_URL=${AWS_S3_PUBLIC_BASE_URL}
             AWS_S3_UPLOAD_PREFIX=${AWS_S3_UPLOAD_PREFIX:-uploads/}
             FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH}
-=======
-            JWT_EXPIRATION=${JWT_EXPIRATION:-31536000000}
-            JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION:-31536000000}
-            HOLIDAY_API_BASE_URL=${HOLIDAY_API_BASE_URL:-https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService}
-            AWS_REGION=${AWS_REGION:-ap-northeast-2}
-            AWS_S3_BUCKET=${AWS_S3_BUCKET:-lovechedule-s3}
-            AWS_S3_PUBLIC_BASE_URL=${AWS_S3_PUBLIC_BASE_URL}
-            AWS_S3_UPLOAD_PREFIX=${AWS_S3_UPLOAD_PREFIX:-uploads/}
-            FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH:-weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json}
->>>>>>> Stashed changes
             FORCE_UPDATE_TRAEFIK=${{ secrets.FORCE_UPDATE_TRAEFIK }}
             FORCE_UPDATE_MONGODB=${{ secrets.FORCE_UPDATE_MONGODB }}
             FORCE_UPDATE_REDIS=${{ secrets.FORCE_UPDATE_REDIS }}
