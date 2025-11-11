@@ -163,13 +163,8 @@ jobs:
             exit 1
           fi
 
-          # 기존 이미지가 있다면 삭제
+          # 새 이미지 pull (Docker가 자동으로 최신 레이어만 다운로드)
           FULL_IMAGE=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          if docker image inspect $FULL_IMAGE > /dev/null 2>&1; then
-            echo "  - 기존 이미지 삭제 중: $FULL_IMAGE"
-            docker rmi $FULL_IMAGE
-          fi
-
           docker pull $FULL_IMAGE
           echo "  - 이미지 다운로드 완료"
 
