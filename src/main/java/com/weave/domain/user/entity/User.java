@@ -27,6 +27,7 @@ public class User {
 
   @NotBlank
   @Email
+  @Field("email")
   @Indexed(unique = true)                 // unique: true
   private String email;
 

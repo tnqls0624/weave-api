@@ -123,10 +123,19 @@ public class AuthService {
 
     String email = account.getEmail();
     String nickname = profile.getNickname();
-
     String gender = account.getGender();
     String birthday = account.getBirthday();
     String thumbnailImage = profile.getThumbnailImageUrl();
+
+    // 디버깅: Kakao API 응답 확인
+    log.info("Kakao login - id: {}, email: '{}', nickname: {}", kakao.getId(), email, nickname);
+
+    // Email이 없으면 에러 발생
+    if (email == null || email.isBlank()) {
+      log.error("Kakao account email is null. kakao_id: {}, nickname: {}", kakao.getId(), nickname);
+      throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED,
+          "카카오 계정의 이메일을 가져올 수 없습니다. 카카오 앱 설정에서 이메일 동의항목을 확인해주세요.");
+    }
 
     return authRepository.findByEmail(email)
         .orElseGet(() ->
