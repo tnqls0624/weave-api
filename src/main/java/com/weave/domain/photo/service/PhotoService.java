@@ -62,10 +62,8 @@ public class PhotoService {
     }
 
     // Deduplicate by hash
-    long dbStart = System.nanoTime();
     Photo existing = photoRepository.findByHash(hash).orElse(null);
-    long dbEnd = System.nanoTime();
-    log.debug("[PHOTO] db_lookup ms={}", (dbEnd - dbStart) / 1_000_000.0);
+    log.debug("[PHOTO] db_lookup hash={} existing={}", hash, existing);
     if (existing != null) {
       // cleanup temp file
       try {
