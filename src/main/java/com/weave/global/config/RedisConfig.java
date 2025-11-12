@@ -9,11 +9,13 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Slf4j
 @Configuration
+@EnableRedisRepositories(basePackages = "com.weave.domain.auth.repository")
 public class RedisConfig {
 
   @Value("${spring.data.redis.host:localhost}")
@@ -32,7 +34,8 @@ public class RedisConfig {
     log.info("=".repeat(80));
     log.info("Redis Host: {}", host);
     log.info("Redis Port: {}", port);
-    log.info("Redis Password: {}", password != null && !password.isEmpty() ? "[MASKED]" : "[EMPTY]");
+    log.info("Redis Password: {}",
+        password != null && !password.isEmpty() ? "[MASKED]" : "[EMPTY]");
     log.info("=".repeat(80));
   }
 
