@@ -65,9 +65,7 @@ public class PhotoService {
     long dbStart = System.nanoTime();
     Photo existing = photoRepository.findByHash(hash).orElse(null);
     long dbEnd = System.nanoTime();
-    if (log.isDebugEnabled()) {
-      log.debug("[PHOTO] db_lookup ms={}", (dbEnd - dbStart) / 1_000_000.0);
-    }
+    log.debug("[PHOTO] db_lookup ms={}", (dbEnd - dbStart) / 1_000_000.0);
     if (existing != null) {
       // cleanup temp file
       try {
@@ -89,6 +87,8 @@ public class PhotoService {
           .contentType(file.getContentType())
           .build();
 
+      log.debug("[PHOTO] s3_put key={} contentType={}", key, file.getContentType());
+
       long s3Start = System.nanoTime();
       s3Client.putObject(putReq, RequestBody.fromFile(temp));
       long s3End = System.nanoTime();
@@ -102,6 +102,7 @@ public class PhotoService {
           java.nio.file.Files.deleteIfExists(temp);
         }
       } catch (IOException ignore) {
+        log.warn("Failed to delete temporary file: {}", temp, ignore);
       }
     }
 
@@ -113,10 +114,10 @@ public class PhotoService {
         .build();
     saved = photoRepository.save(saved);
 
-    if (log.isDebugEnabled()) {
-      long t1 = System.nanoTime();
-      log.debug("[PHOTO] total ms={} size={}", (t1 - t0) / 1_000_000.0, file.getSize());
-    }
+    long t1 = System.nanoTime();
+    log.debug("[PHOTO] total ms={} size={}", (t1 - t0) / 1_000_000.0, file.getSize());
+
+    log.info("Uploaded photo: {}", saved);
 
     return PhotoUploadResponseDto.builder().url(saved.getUrl()).build();
   }
