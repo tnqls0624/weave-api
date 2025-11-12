@@ -30,10 +30,10 @@ public class JwtTokenProvider {
   private final PrivateKey privateKey;
   private final PublicKey publicKey;
 
-  @Value("${jwt.expiration:3600000}") // 1시간
+  @Value("${jwt.expiration:31536000000}") // 7일
   private long validityInMilliseconds;
 
-  @Value("${jwt.refresh-expiration:604800000}") // 7일
+  @Value("${jwt.refresh-expiration:3153600000000}") // 1달
   private long refreshValidityInMilliseconds;
 
   public JwtTokenProvider(

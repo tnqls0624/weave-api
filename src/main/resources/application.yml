@@ -54,8 +54,8 @@ server:
 # 보안/JWT 예시 (값은 환경변수로 주입 권장)
 # =========================
 jwt:
-  expiration: 31536000000 # 1년 (365일 * 24시간 * 60분 * 60초 * 1000ms)
-  refresh-expiration: 31536000000 # 1년
+  expiration: 31536000000 #
+  refresh-expiration: 3153600000000
   private-key-path: # 비워두면 자동 생성
   public-key-path: # 비워두면 자동 생성
 

@@ -98,9 +98,12 @@ public class AuthService {
     String accessToken = jwtTokenProvider.createToken(user.getEmail());
     String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
 
+    log.info("[SocialLogin] accessToken: {}, refreshToken: {}", accessToken, refreshToken);
+
     // Redis에 Refresh Token 저장
     saveRefreshToken(user.getEmail(), refreshToken);
 
+    log.info("[SocialLogin] cacheRefreshToken Success");
     return SocialLoginResponseDto.builder()
         .accessToken(accessToken)
         .refreshToken(refreshToken)
