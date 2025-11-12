@@ -39,36 +39,12 @@ public class Workspace {
   @Field("participant_colors")
   private Map<String, String> participantColors; // key: userId, value: color code (e.g., "#FF5733")
 
-  private Tag tags; // 기존 태그 (하위 호환성 유지)
-
   @Field("love_day")
   private String loveDay;
-
-  @Field("thumbnail_image")
-  private String thumbnailImage;
 
   @CreatedDate
   private Date createdAt;
 
   @LastModifiedDate
   private Date updatedAt;
-
-  @Data
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class Tag {
-
-    private ColorTag anniversary;
-    private ColorTag together;
-    private ColorTag guest;
-    private ColorTag master;
-  }
-
-  @Data
-  @NoArgsConstructor
-  @AllArgsConstructor
-  public static class ColorTag {
-
-    private String color;
-  }
 }

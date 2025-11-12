@@ -41,7 +41,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class WorkspaceService {
 
-  private static final DateTimeFormatter HOLIDAY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+  private static final DateTimeFormatter HOLIDAY_DATE_FORMATTER = DateTimeFormatter.ofPattern(
+      "yyyyMMdd");
 
   private final WorkspaceRepository workspaceRepository;
   private final UserRepository userRepository;
@@ -62,7 +63,6 @@ public class WorkspaceService {
             .master(master.getId())
             .users(users)
             .loveDay(dto.getLoveDay())
-            .thumbnailImage(dto.getThumbnailImage())
             .build()
     );
     // join master/users
@@ -76,7 +76,6 @@ public class WorkspaceService {
     );
 
     workspace.setLoveDay(dto.getLoveDay());
-    workspace.setThumbnailImage(dto.getThumbnailImage());
     workspaceRepository.save(workspace);
 
     Map<ObjectId, User> uMap = loadUsersForWorkspace(workspace);
@@ -276,7 +275,6 @@ public class WorkspaceService {
         .participantColors(
             ws.getParticipantColors() != null ? ws.getParticipantColors() : new HashMap<>())
         .loveDay(ws.getLoveDay())
-        .thumbnailImage(ws.getThumbnailImage())
         .createdAt(ws.getCreatedAt())
         .updatedAt(ws.getUpdatedAt())
         .build();
@@ -411,7 +409,8 @@ public class WorkspaceService {
             LocalDate scheduleDate = s.getStartDate().toInstant()
                 .atZone(java.time.ZoneId.of("Asia/Seoul"))
                 .toLocalDate();
-            return scheduleDate.getYear() == targetYear && scheduleDate.getMonthValue() == targetMonth;
+            return scheduleDate.getYear() == targetYear
+                && scheduleDate.getMonthValue() == targetMonth;
           })
           .collect(Collectors.toList());
     }
@@ -435,11 +434,11 @@ public class WorkspaceService {
     // 공휴일 추가
     holidays.forEach(holiday -> {
       LocalDate date = LocalDate.parse(holiday.getLocdate(), HOLIDAY_DATE_FORMATTER);
-      String formattedDate = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+      Date holidayDate = Date.from(date.atStartOfDay(java.time.ZoneId.of("Asia/Seoul")).toInstant());
 
       combinedSchedule.add(WorkspaceScheduleItemDto.builder()
-          .startDate(formattedDate)
-          .endDate(formattedDate)
+          .startDate(holidayDate)
+          .endDate(holidayDate)
           .title(holiday.getDateName())
           .description("Y".equals(holiday.getIsHoliday()) ? "Public Holiday" : "Workday")
           .participants(ImmutableList.<UserResponseDto>of())
@@ -457,17 +456,10 @@ public class WorkspaceService {
           .collect(Collectors.toList())
           : ImmutableList.of();
 
-      String startDateStr = schedule.getStartDate().toInstant()
-          .atZone(java.time.ZoneId.of("Asia/Seoul"))
-          .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-      String endDateStr = schedule.getEndDate().toInstant()
-          .atZone(java.time.ZoneId.of("Asia/Seoul"))
-          .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-
       combinedSchedule.add(WorkspaceScheduleItemDto.builder()
           .id(schedule.getId())
-          .startDate(startDateStr)
-          .endDate(endDateStr)
+          .startDate(schedule.getStartDate())
+          .endDate(schedule.getEndDate())
           .title(schedule.getTitle())
           .memo(schedule.getMemo())
           .participants(participantDtos)
@@ -478,9 +470,8 @@ public class WorkspaceService {
     });
 
     // 날짜별 정렬
-    combinedSchedule.sort(Comparator.comparing(item ->
-        Strings.nullToEmpty(item.getStartDate())
-    ));
+    combinedSchedule.sort(Comparator.comparing(WorkspaceScheduleItemDto::getStartDate,
+        Comparator.nullsLast(Comparator.naturalOrder())));
 
     User master = workspace.getMaster() != null ? userMap.get(workspace.getMaster()) : null;
     List<UserResponseDto> userDtos = workspace.getUsers() != null
@@ -496,7 +487,6 @@ public class WorkspaceService {
         .master(master != null ? UserResponseDto.from(master) : null)
         .users(userDtos)
         .loveDay(workspace.getLoveDay())
-        .thumbnailImage(workspace.getThumbnailImage())
         .schedules(combinedSchedule)
         .build();
   }

@@ -37,9 +37,6 @@ public class WorkspaceResponseDto {
   @Schema(description = "사귄 날짜", example = "2024-01-01")
   private String loveDay;
 
-  @Schema(description = "썸네일 이미지", example = "http://test.com/image")
-  private String thumbnailImage;
-
   @Schema(description = "생성일시")
   private Date createdAt;
 
@@ -55,7 +52,6 @@ public class WorkspaceResponseDto {
             ? workspace.getParticipantColors()
             : ImmutableMap.of())
         .loveDay(workspace.getLoveDay())
-        .thumbnailImage(workspace.getThumbnailImage())
         .createdAt(workspace.getCreatedAt())
         .updatedAt(workspace.getUpdatedAt())
         .build();

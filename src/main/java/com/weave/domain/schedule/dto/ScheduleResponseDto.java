@@ -1,7 +1,9 @@
 package com.weave.domain.schedule.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.weave.domain.schedule.entity.Schedule;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -23,10 +25,12 @@ public class ScheduleResponseDto {
   private String memo;
 
   @JsonProperty("start_date")
-  private String startDate;
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
+  private Date startDate;
 
   @JsonProperty("end_date")
-  private String endDate;
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
+  private Date endDate;
 
   @JsonProperty("repeat_type")
   private String repeatType;

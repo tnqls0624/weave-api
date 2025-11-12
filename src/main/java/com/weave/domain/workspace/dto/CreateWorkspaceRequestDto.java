@@ -16,8 +16,4 @@ public class CreateWorkspaceRequestDto {
   @Schema(example = "2024-01-01", description = "사귀기 시작한 날짜")
   @NotBlank
   private String loveDay;
-
-  @Schema(example = "http://test.com/image", description = "썸네일 이미지")
-  @NotBlank
-  private String thumbnailImage;
 }

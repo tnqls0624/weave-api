@@ -2,6 +2,7 @@ package com.weave.domain.workspace.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.weave.domain.user.dto.UserResponseDto;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
@@ -18,8 +19,8 @@ import org.bson.types.ObjectId;
 public class WorkspaceScheduleItemDto {
 
   private ObjectId id;
-  private String startDate;  // 스케줄용
-  private String endDate;  // 스케줄용
+  private Date startDate;  // 스케줄용
+  private Date endDate;  // 스케줄용
   private String title;
   private String description;  // 공휴일용
   private String memo;  // 스케줄용

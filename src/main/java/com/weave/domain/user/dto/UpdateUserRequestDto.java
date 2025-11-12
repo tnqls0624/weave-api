@@ -16,7 +16,6 @@ public class UpdateUserRequestDto {
   private String name;
 
   private String fcmToken;
-  // 부분 업데이트를 위해 박싱 타입 사용: null이면 갱신하지 않음
   private Boolean pushEnabled;
   private String avatarUrl;
 }

@@ -23,10 +23,4 @@ public class UpdateWorkspaceRequestDto {
 
   @Schema(example = "[\"68576234782d9c909f1b5ff2\", \"68576234782d9c909f1b5ff3\"]")
   private List<String> users;
-
-  @Schema(
-      example = "http://test.com/image",
-      description = "썸네일 이미지"
-  )
-  private String thumbnailImage;
 }

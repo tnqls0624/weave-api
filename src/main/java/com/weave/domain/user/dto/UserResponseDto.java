@@ -28,14 +28,8 @@ public class UserResponseDto {
   @Schema(description = "사용자 이름", example = "이수빈")
   private String name;
 
-  @Schema(description = "성별", example = "female")
-  private String gender;
-
   @Schema(description = "생일", example = "1993-07-11")
-  private String birthday;
-
-  @Schema(description = "프로필 썸네일 URL", example = "https://example.com/image.jpg")
-  private String thumbnailImage;
+  private Date birthday;
 
   @Schema(description = "초대 코드", example = "ABC123")
   private String inviteCode;
@@ -61,9 +55,7 @@ public class UserResponseDto {
         .loginType(user.getLoginType())
         .email(user.getEmail())
         .name(user.getName())
-        .gender(user.getGender())
         .birthday(user.getBirthday())
-        .thumbnailImage(user.getThumbnailImage())
         .inviteCode(user.getInviteCode())
         .fcmToken(user.getFcmToken())
         .pushEnabled(user.isPushEnabled())

@@ -129,8 +129,6 @@ public class AuthService {
 
     String email = account.getEmail();
     String nickname = profile.getNickname();
-    String gender = account.getGender();
-    String birthday = account.getBirthday();
     String thumbnailImage = profile.getThumbnailImageUrl();
 
     // 디버깅: Kakao API 응답 확인
@@ -151,8 +149,6 @@ public class AuthService {
                     .name(nickname)
                     .loginType(dto.getLoginType())
                     .inviteCode(inviteCode)
-                    .gender(gender)
-                    .birthday(birthday)
                     .pushEnabled(true)
                     .thumbnailImage(thumbnailImage)
                     .build()

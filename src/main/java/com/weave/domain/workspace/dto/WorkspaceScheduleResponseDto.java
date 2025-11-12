@@ -18,6 +18,5 @@ public class WorkspaceScheduleResponseDto {
   private UserResponseDto master;
   private List<UserResponseDto> users;
   private String loveDay;
-  private String thumbnailImage;
   private List<WorkspaceScheduleItemDto> schedules;
 }

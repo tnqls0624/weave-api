@@ -28,16 +28,13 @@ public class User {
   @NotBlank
   @Email
   @Field("email")
-  @Indexed(unique = true)                 // unique: true
+  @Indexed(unique = true)
   private String email;
 
   @NotBlank
   private String name;
 
-  // EMAIL 로그인 타입에서만 사용 (nullable)
   private String password;
-
-  private String gender;       // optional
 
   private Date birthday;
 
@@ -45,9 +42,6 @@ public class User {
   @NotBlank
   @Indexed(unique = true)
   private String inviteCode;
-
-  @Field("thumbnail_image")
-  private String thumbnailImage;
 
   @Field("fcm_token")
   @Indexed(unique = true, sparse = true)
@@ -57,6 +51,7 @@ public class User {
   @Builder.Default
   private boolean pushEnabled = true;
 
+  @Field("thumbnail_image")
   private String avatarUrl;
 
   @CreatedDate
