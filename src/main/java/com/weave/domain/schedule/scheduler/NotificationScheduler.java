@@ -6,8 +6,10 @@ import com.weave.domain.schedule.service.NotificationService;
 import com.weave.domain.user.entity.User;
 import com.weave.domain.user.repository.UserRepository;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,8 +26,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class NotificationScheduler {
 
-  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(
-      "yyyy-MM-dd HH:mm:ss");
   private final ScheduleRepository scheduleRepository;
   private final UserRepository userRepository;
   private final NotificationService notificationService;
@@ -41,10 +41,15 @@ public class NotificationScheduler {
     log.info("Starting daily schedule notification batch");
 
     LocalDate today = LocalDate.now();
-    String todayStr = today.atStartOfDay().format(DATE_FORMATTER);
+    Date startOfDay = Date.from(today.atStartOfDay(ZoneId.of("Asia/Seoul")).toInstant());
+
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(startOfDay);
+    cal.add(Calendar.DAY_OF_MONTH, 1);
+    Date endOfDay = cal.getTime();
 
     // 오늘 시작하는 모든 일정 조회 (모든 워크스페이스)
-    List<Schedule> todaySchedules = scheduleRepository.findSchedulesStartingToday(todayStr);
+    List<Schedule> todaySchedules = scheduleRepository.findSchedulesStartingToday(startOfDay, endOfDay);
 
     log.info("Found {} schedules for today", todaySchedules.size());
 

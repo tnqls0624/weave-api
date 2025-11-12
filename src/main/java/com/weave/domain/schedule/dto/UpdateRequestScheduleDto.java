@@ -1,10 +1,12 @@
 package com.weave.domain.schedule.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import java.util.Date;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,15 +22,17 @@ public class UpdateRequestScheduleDto {
   @Schema(example = "누나 생일은 10월 6일", description = "설명")
   private String memo;
 
-  @Schema(example = "2025-01-10 13:00:00", description = "시작 날짜")
+  @Schema(example = "2025-01-10T13:00:00", description = "시작 날짜")
   @JsonProperty("start_date")
-  @NotBlank
-  private String startDate;
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
+  @NotNull
+  private Date startDate;
 
-  @Schema(example = "2025-01-11 13:00:00", description = "종료 날짜")
+  @Schema(example = "2025-01-11T13:00:00", description = "종료 날짜")
   @JsonProperty("end_date")
-  @NotBlank
-  private String endDate;
+  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
+  @NotNull
+  private Date endDate;
 
   @Schema(example = "NONE", description = "반복 타입")
   @JsonProperty("repeat_type")

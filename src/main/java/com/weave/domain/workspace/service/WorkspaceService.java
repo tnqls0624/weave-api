@@ -151,7 +151,9 @@ public class WorkspaceService {
     List<Schedule> allSchedules = scheduleRepository.findByWorkspace(workspaceId);
     List<Schedule> upcomingSchedules = allSchedules.stream()
         .filter(s -> {
-          LocalDate scheduleDate = LocalDate.parse(s.getStartDate().substring(0, 10));
+          LocalDate scheduleDate = s.getStartDate().toInstant()
+              .atZone(java.time.ZoneId.of("Asia/Seoul"))
+              .toLocalDate();
           // 오늘 이후이고, 이번년도이며, 내가 참여자인 스케줄만 필터링
           boolean isUpcomingThisYear =
               !scheduleDate.isBefore(today) && scheduleDate.getYear() == currentYear;
@@ -371,10 +373,15 @@ public class WorkspaceService {
 
     // year + month + day
     if (year != null && month != null && day != null) {
-      String targetDate = String.format("%s-%02d-%02d", year, Integer.parseInt(month),
+      LocalDate targetDate = LocalDate.of(Integer.parseInt(year), Integer.parseInt(month),
           Integer.parseInt(day));
       return schedules.stream()
-          .filter(s -> s.getStartDate().startsWith(targetDate))
+          .filter(s -> {
+            LocalDate scheduleDate = s.getStartDate().toInstant()
+                .atZone(java.time.ZoneId.of("Asia/Seoul"))
+                .toLocalDate();
+            return scheduleDate.equals(targetDate);
+          })
           .collect(Collectors.toList());
     }
 
@@ -387,7 +394,9 @@ public class WorkspaceService {
 
       return schedules.stream()
           .filter(s -> {
-            LocalDate scheduleDate = LocalDate.parse(s.getStartDate().substring(0, 10));
+            LocalDate scheduleDate = s.getStartDate().toInstant()
+                .atZone(java.time.ZoneId.of("Asia/Seoul"))
+                .toLocalDate();
             return !scheduleDate.isBefore(startOfWeek) && !scheduleDate.isAfter(endOfWeek);
           })
           .collect(Collectors.toList());
@@ -395,9 +404,15 @@ public class WorkspaceService {
 
     // year + month
     if (year != null && month != null) {
-      String yearMonth = String.format("%s-%02d", year, Integer.parseInt(month));
+      int targetYear = Integer.parseInt(year);
+      int targetMonth = Integer.parseInt(month);
       return schedules.stream()
-          .filter(s -> s.getStartDate().startsWith(yearMonth))
+          .filter(s -> {
+            LocalDate scheduleDate = s.getStartDate().toInstant()
+                .atZone(java.time.ZoneId.of("Asia/Seoul"))
+                .toLocalDate();
+            return scheduleDate.getYear() == targetYear && scheduleDate.getMonthValue() == targetMonth;
+          })
           .collect(Collectors.toList());
     }
 
@@ -405,7 +420,10 @@ public class WorkspaceService {
     return schedules.stream()
         .filter(s -> {
           assert year != null;
-          return s.getStartDate().startsWith(year);
+          LocalDate scheduleDate = s.getStartDate().toInstant()
+              .atZone(java.time.ZoneId.of("Asia/Seoul"))
+              .toLocalDate();
+          return scheduleDate.getYear() == Integer.parseInt(year);
         })
         .collect(Collectors.toList());
   }
@@ -439,10 +457,17 @@ public class WorkspaceService {
           .collect(Collectors.toList())
           : ImmutableList.of();
 
+      String startDateStr = schedule.getStartDate().toInstant()
+          .atZone(java.time.ZoneId.of("Asia/Seoul"))
+          .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+      String endDateStr = schedule.getEndDate().toInstant()
+          .atZone(java.time.ZoneId.of("Asia/Seoul"))
+          .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+
       combinedSchedule.add(WorkspaceScheduleItemDto.builder()
           .id(schedule.getId())
-          .startDate(schedule.getStartDate())
-          .endDate(schedule.getEndDate())
+          .startDate(startDateStr)
+          .endDate(endDateStr)
           .title(schedule.getTitle())
           .memo(schedule.getMemo())
           .participants(participantDtos)

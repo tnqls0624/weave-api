@@ -35,12 +35,10 @@ public class Schedule {
   private String memo;
 
   @Field("start_date")
-  @NotBlank
   @Indexed
   private Date startDate;
 
   @Field("end_date")
-  @NotBlank
   @Indexed
   private Date endDate;
 
