@@ -36,7 +36,7 @@ public class User {
 
   private String password;
 
-  private Date birthday;
+  private String birthday;
 
   @Field("invite_code")
   @NotBlank

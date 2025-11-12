@@ -28,8 +28,8 @@ public class UserResponseDto {
   @Schema(description = "사용자 이름", example = "이수빈")
   private String name;
 
-  @Schema(description = "생일", example = "1993-07-11")
-  private Date birthday;
+  @Schema(description = "생일", example = "0624")
+  private String birthday;
 
   @Schema(description = "초대 코드", example = "ABC123")
   private String inviteCode;
