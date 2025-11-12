@@ -180,6 +180,8 @@ spring:
   config:
     activate:
       on-profile: prod
+  cache:
+    type: redis
   data:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:${MONGODB_URI}}
