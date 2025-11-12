@@ -48,7 +48,8 @@ public class SecurityConfig {
                 "/swagger-ui/**",
                 "/actuator/health",
                 "/actuator/info",
-                "/rsocket").permitAll() // 로그인, 회원가입, 헬스체크, RSocket 허용
+                "/rsocket",
+                "/api/rsocket").permitAll() // 로그인, 회원가입, 헬스체크, RSocket 허용
             .anyRequest().authenticated()
         ).addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
             UsernamePasswordAuthenticationFilter.class);

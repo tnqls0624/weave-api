@@ -166,7 +166,7 @@ services:
         - "traefik.http.routers.api.service=api"
         - "traefik.http.routers.api.middlewares=api-cors"
         # RSocket WebSocket 라우팅 (HTTP로 처리, WebSocket 업그레이드 지원)
-        - "traefik.http.routers.rsocket.rule=PathPrefix(`/rsocket`)"
+        - "traefik.http.routers.rsocket.rule=PathPrefix(`/api/rsocket`)"
         - "traefik.http.routers.rsocket.entrypoints=web"
         - "traefik.http.routers.rsocket.service=api"
 
