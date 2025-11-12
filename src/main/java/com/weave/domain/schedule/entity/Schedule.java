@@ -11,10 +11,13 @@ import org.bson.types.ObjectId;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 @Document(collection = "schedules")
+@CompoundIndex(name = "workspace_startdate_idx", def = "{'workspace': 1, 'start_date': 1}")
 @Data
 @Builder
 @NoArgsConstructor
@@ -33,17 +36,20 @@ public class Schedule {
 
   @Field("start_date")
   @NotBlank
-  private String startDate;
+  @Indexed
+  private Date startDate;
 
   @Field("end_date")
   @NotBlank
-  private String endDate;
+  @Indexed
+  private Date endDate;
 
   @Field("repeat_type")
   @Builder.Default
   private String repeatType = "none";
 
   @Field("participants")
+  @Indexed
   @Builder.Default
   private List<ObjectId> participants = List.of();
 
@@ -52,6 +58,7 @@ public class Schedule {
   private String calendarType = "solar";
 
   @Field("workspace")
+  @Indexed
   private ObjectId workspace;
 
   @CreatedDate

@@ -39,7 +39,7 @@ public class User {
 
   private String gender;       // optional
 
-  private String birthday;     // optional(문자열로 동일 대응)
+  private Date birthday;
 
   @Field("invite_code")
   @NotBlank
