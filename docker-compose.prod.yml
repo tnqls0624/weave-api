@@ -158,15 +158,17 @@ services:
         - "traefik.http.middlewares.api-cors.headers.accessControlAllowCredentials=true"
         - "traefik.http.middlewares.api-cors.headers.accessControlMaxAge=3600"
         - "traefik.http.middlewares.api-cors.headers.addVaryHeader=true"
+        # 서비스 정의 (공통)
+        - "traefik.http.services.api.loadbalancer.server.port=8080"
         # HTTP 라우팅 (CORS 미들웨어 적용)
         - "traefik.http.routers.api.rule=PathPrefix(`/`) || PathPrefix(`/api`) || PathPrefix(`/actuator`) || PathPrefix(`/swagger`) || PathPrefix(`/health`)"
         - "traefik.http.routers.api.entrypoints=web"
+        - "traefik.http.routers.api.service=api"
         - "traefik.http.routers.api.middlewares=api-cors"
-        - "traefik.http.services.api.loadbalancer.server.port=8080"
         # RSocket WebSocket 라우팅 (HTTP로 처리, WebSocket 업그레이드 지원)
         - "traefik.http.routers.rsocket.rule=PathPrefix(`/rsocket`)"
         - "traefik.http.routers.rsocket.entrypoints=web"
-        - "traefik.http.services.rsocket.loadbalancer.server.port=8080"
+        - "traefik.http.routers.rsocket.service=api"
 
 volumes:
   mongodb_data:
