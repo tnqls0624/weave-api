@@ -129,7 +129,6 @@ public class AuthService {
 
     String email = account.getEmail();
     String nickname = profile.getNickname();
-    String thumbnailImage = profile.getThumbnailImageUrl();
 
     // 디버깅: Kakao API 응답 확인
     log.info("Kakao login - id: {}, email: '{}', nickname: {}", kakao.getId(), email, nickname);
@@ -150,7 +149,6 @@ public class AuthService {
                     .loginType(dto.getLoginType())
                     .inviteCode(inviteCode)
                     .pushEnabled(true)
-                    .thumbnailImage(thumbnailImage)
                     .build()
             )
         );
