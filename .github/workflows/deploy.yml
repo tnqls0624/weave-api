@@ -304,6 +304,8 @@ jobs:
               AWS_S3_BUCKET="${{ secrets.PROD_AWS_S3_BUCKET }}"
               AWS_S3_PUBLIC_BASE_URL="${{ secrets.PROD_AWS_S3_PUBLIC_BASE_URL }}"
               AWS_S3_UPLOAD_PREFIX="${{ secrets.PROD_AWS_S3_UPLOAD_PREFIX }}"
+              AWS_ACCESS_KEY_ID="${{ secrets.PROD_AWS_ACCESS_KEY_ID }}"
+              AWS_SECRET_ACCESS_KEY="${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}"
 
               # Firebase
               FIREBASE_CONFIG_PATH="${{ secrets.PROD_FIREBASE_CONFIG_PATH }}"
