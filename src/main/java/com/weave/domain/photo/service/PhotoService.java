@@ -53,10 +53,8 @@ public class PhotoService {
       long hashStart = System.nanoTime();
       hash = sha256AndCopyToTemp(file, temp);
       long hashEnd = System.nanoTime();
-      if (log.isDebugEnabled()) {
-        log.debug("[PHOTO] hash+spill_to_disk ms={} size={} name={}",
-            (hashEnd - hashStart) / 1_000_000.0, file.getSize(), file.getOriginalFilename());
-      }
+      log.debug("[PHOTO] hash+spill_to_disk ms={} size={} name={}",
+          (hashEnd - hashStart) / 1_000_000.0, file.getSize(), file.getOriginalFilename());
     } catch (IOException e) {
       throw new RuntimeException("임시 파일 생성/쓰기 중 오류가 발생했습니다.", e);
     }

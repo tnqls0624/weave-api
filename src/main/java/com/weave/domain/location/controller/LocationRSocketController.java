@@ -3,18 +3,18 @@ package com.weave.domain.location.controller;
 import com.weave.domain.location.dto.LocationRequestDto;
 import com.weave.domain.location.dto.LocationResponseDto;
 import com.weave.domain.location.service.LocationService;
+import com.weave.domain.location.service.RedisMessageBroker;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Sinks;
 
 @Slf4j
 @Controller
@@ -22,9 +22,7 @@ import reactor.core.publisher.Sinks;
 public class LocationRSocketController {
 
   private final LocationService locationService;
-
-  // 워크스페이스별 위치 스트림을 관리하는 Sink
-  private final Map<String, Sinks.Many<LocationResponseDto>> workspaceStreams = new ConcurrentHashMap<>();
+  private final RedisMessageBroker redisMessageBroker;
 
   /**
    * Request-Response: 워크스페이스의 현재 위치 조회 클라이언트: rsocket.requestResponse()
@@ -42,23 +40,19 @@ public class LocationRSocketController {
   @MessageMapping("workspace.{workspaceId}.location.update")
   public Mono<Void> updateLocation(
       @DestinationVariable String workspaceId,
-      @Payload LocationRequestDto dto) {
+      @Payload LocationRequestDto dto,
+      @AuthenticationPrincipal UserDetails userDetails) {
 
     return Mono.fromRunnable(() -> {
       log.info("RSocket: Update location for workspace {}", workspaceId);
 
-      // TODO: 인증 구현 후 userDetails.getUsername() 사용
-      // 임시로 첫 번째 사용자 이메일 사용
-      String tempEmail = "test@example.com";
+      String userEmail = userDetails.getUsername();
 
       // 위치 저장
-      LocationResponseDto response = locationService.saveLocation(workspaceId, dto, tempEmail);
+      LocationResponseDto response = locationService.saveLocation(workspaceId, dto, userEmail);
 
-      // 해당 워크스페이스를 구독 중인 모든 클라이언트에게 브로드캐스트
-      Sinks.Many<LocationResponseDto> sink = workspaceStreams.get(workspaceId);
-      if (sink != null) {
-        sink.tryEmitNext(response);
-      }
+      // Redis를 통해 모든 서버의 클라이언트에게 브로드캐스트
+      redisMessageBroker.publish(workspaceId, response);
     });
   }
 
@@ -71,16 +65,10 @@ public class LocationRSocketController {
 
     log.info("RSocket: Stream locations for workspace {}", workspaceId);
 
-    // 워크스페이스별 Sink 생성 (없으면)
-    Sinks.Many<LocationResponseDto> sink = workspaceStreams.computeIfAbsent(
-        workspaceId,
-        k -> Sinks.many().multicast().onBackpressureBuffer()
-    );
-
-    // 초기 위치 데이터 + 실시간 스트림
+    // 초기 위치 데이터 + Redis를 통한 실시간 스트림
     return Flux.concat(
         Flux.fromIterable(locationService.getLocations(workspaceId)),
-        sink.asFlux()
+        redisMessageBroker.subscribe(workspaceId)
     );
   }
 
@@ -90,29 +78,23 @@ public class LocationRSocketController {
   @MessageMapping("workspace.{workspaceId}.locations.channel")
   public Flux<LocationResponseDto> channelLocations(
       @DestinationVariable String workspaceId,
-      Flux<LocationRequestDto> locationStream) {
+      Flux<LocationRequestDto> locationStream,
+      @AuthenticationPrincipal UserDetails userDetails) {
 
     log.info("RSocket: Channel locations for workspace {}", workspaceId);
 
-    // 워크스페이스별 Sink 생성
-    Sinks.Many<LocationResponseDto> sink = workspaceStreams.computeIfAbsent(
-        workspaceId,
-        k -> Sinks.many().multicast().onBackpressureBuffer()
-    );
+    String userEmail = userDetails.getUsername();
 
-    // TODO: 인증 구현 후 userDetails.getUsername() 사용
-    String tempEmail = "test@example.com";
-
-    // 클라이언트로부터 받은 위치를 저장하고 브로드캐스트
+    // 클라이언트로부터 받은 위치를 저장하고 Redis를 통해 브로드캐스트
     locationStream.subscribe(dto -> {
-      LocationResponseDto response = locationService.saveLocation(workspaceId, dto, tempEmail);
-      sink.tryEmitNext(response);
+      LocationResponseDto response = locationService.saveLocation(workspaceId, dto, userEmail);
+      redisMessageBroker.publish(workspaceId, response);
     });
 
-    // 초기 위치 + 실시간 스트림 반환
+    // 초기 위치 + Redis를 통한 실시간 스트림 반환
     return Flux.concat(
         Flux.fromIterable(locationService.getLocations(workspaceId)),
-        sink.asFlux()
+        redisMessageBroker.subscribe(workspaceId)
     );
   }
 }
