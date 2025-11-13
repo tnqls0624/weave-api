@@ -16,9 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -29,7 +26,6 @@ public class ScheduleService {
   private final WorkspaceRepository workspaceRepository;
   private final ScheduleNotificationService scheduleNotificationService;
 
-  @Transactional
   public ScheduleResponseDto create(CreateRequestScheduleDto dto) {
 
     Workspace workspace = workspaceRepository.findById(new ObjectId(dto.getWorkspace()))
@@ -56,18 +52,7 @@ public class ScheduleService {
 
     Schedule savedSchedule = scheduleRepository.save(schedule);
 
-    // 트랜잭션 활성 여부 확인 후 등록
-    if (TransactionSynchronizationManager.isSynchronizationActive()) {
-      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-        @Override
-        public void afterCommit() {
-          scheduleNotificationService.sendScheduleCreatedNotification(workspace, savedSchedule);
-        }
-      });
-    } else {
-      // 이 경우는 거의 없겠지만, 안전하게 즉시 비동기 호출
-      scheduleNotificationService.sendScheduleCreatedNotification(workspace, savedSchedule);
-    }
+    scheduleNotificationService.sendScheduleCreatedNotification(workspace, savedSchedule);
 
     return ScheduleResponseDto.from(savedSchedule);
   }
