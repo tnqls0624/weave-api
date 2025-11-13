@@ -35,7 +35,9 @@ public class JacksonConfig {
           }
       );
 
+      // Date를 ISO-8601 형식으로 직렬화
       builder.featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+      builder.simpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
     };
   }
 
