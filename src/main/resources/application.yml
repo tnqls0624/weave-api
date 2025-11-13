@@ -83,7 +83,7 @@ aws:
   # 리전은 버킷이 생성된 리전과 동일하게 설정하세요. 예: ap-northeast-2 (서울)
   region: ${AWS_REGION:ap-northeast-2}
   s3:
-    bucket: ${AWS_S3_BUCKET:lovechedule-s3}
+    bucket: ${AWS_S3_BUCKET:weave-file-bucket}
     public-base-url: ${AWS_S3_PUBLIC_BASE_URL:}
     upload-prefix: ${AWS_S3_UPLOAD_PREFIX:${AWS_S3_UPLOAD_PATH:uploads/}}
 
