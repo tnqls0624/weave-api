@@ -85,10 +85,22 @@ public class PhotoService {
           .contentType(file.getContentType())
           .build();
 
-      log.info("[PHOTO] s3_put key={} contentType={}", key, file.getContentType());
+      log.info("[PHOTO] s3_put bucket={} key={} region={}", bucket, key, region);
 
+      long s3Start = System.nanoTime();
       s3Client.putObject(putReq, RequestBody.fromFile(temp));
+      long s3End = System.nanoTime();
+      log.info("[PHOTO] s3_put ms={}", (s3End - s3Start) / 1_000_000.0);
+    } catch (software.amazon.awssdk.services.s3.model.S3Exception e) {
+      log.error("[PHOTO] S3Exception status={} code={} msg={} requestId={}",
+          e.statusCode(), e.awsErrorDetails().errorCode(),
+          e.awsErrorDetails().errorMessage(), e.requestId(), e);
+      throw e;
+    } catch (software.amazon.awssdk.core.exception.SdkClientException e) {
+      log.error("[PHOTO] SDK client/network error: {}", e.getMessage(), e);
+      throw e;
     } finally {
+      // Always try to delete temp file
       try {
         if (temp != null) {
           java.nio.file.Files.deleteIfExists(temp);
