@@ -1,7 +1,12 @@
 package com.weave.global.config;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import java.io.IOException;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,5 +83,32 @@ public class RedisConfig {
         .hashValue(serializer)
         .build();
     return new ReactiveRedisTemplate<>(connectionFactory, serializationContext);
+  }
+
+  @Bean
+  public ObjectMapper redisObjectMapper() {
+    ObjectMapper mapper = new ObjectMapper();
+
+    // Java 8 date/time 모듈 등록
+    mapper.findAndRegisterModules();
+
+    // ObjectId를 String으로 직렬화
+    SimpleModule module = new SimpleModule();
+    module.addSerializer(org.bson.types.ObjectId.class,
+        com.fasterxml.jackson.databind.ser.std.ToStringSerializer.instance);
+    module.addDeserializer(org.bson.types.ObjectId.class,
+        new JsonDeserializer<org.bson.types.ObjectId>() {
+          @Override
+          public org.bson.types.ObjectId deserialize(JsonParser p, DeserializationContext ctxt)
+              throws IOException {
+            String value = p.getValueAsString();
+            return (value != null && org.bson.types.ObjectId.isValid(value))
+                ? new org.bson.types.ObjectId(value)
+                : null;
+          }
+        });
+    mapper.registerModule(module);
+
+    return mapper;
   }
 }

@@ -7,8 +7,8 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.connection.ReactiveSubscription;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
@@ -18,11 +18,17 @@ import reactor.core.publisher.Sinks;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class RedisMessageBroker {
 
   private final ReactiveRedisTemplate<String, String> reactiveRedisTemplate;
   private final ObjectMapper objectMapper;
+
+  public RedisMessageBroker(
+      ReactiveRedisTemplate<String, String> reactiveRedisTemplate,
+      @Qualifier("redisObjectMapper") ObjectMapper objectMapper) {
+    this.reactiveRedisTemplate = reactiveRedisTemplate;
+    this.objectMapper = objectMapper;
+  }
 
   // 워크스페이스별 로컬 Sink (현재 서버에 연결된 클라이언트들에게 브로드캐스트)
   private final Map<String, Sinks.Many<LocationResponseDto>> localSinks = new ConcurrentHashMap<>();
