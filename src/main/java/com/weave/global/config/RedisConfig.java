@@ -61,13 +61,15 @@ public class RedisConfig {
   }
 
   @Bean
-  public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+  public RedisTemplate<String, Object> redisTemplate(
+      RedisConnectionFactory connectionFactory,
+      ObjectMapper redisObjectMapper) {
     RedisTemplate<String, Object> template = new RedisTemplate<>();
     template.setConnectionFactory(connectionFactory);
     template.setKeySerializer(new StringRedisSerializer());
-    template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+    template.setValueSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper));
     template.setHashKeySerializer(new StringRedisSerializer());
-    template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+    template.setHashValueSerializer(new GenericJackson2JsonRedisSerializer(redisObjectMapper));
     return template;
   }
 
@@ -91,6 +93,9 @@ public class RedisConfig {
 
     // Java 8 date/time 모듈 등록
     mapper.findAndRegisterModules();
+
+    // Date를 ISO-8601 형식으로 직렬화
+    mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     // ObjectId를 String으로 직렬화
     SimpleModule module = new SimpleModule();
