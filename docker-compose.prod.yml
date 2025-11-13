@@ -170,7 +170,7 @@ services:
         - "traefik.http.routers.rsocket.rule=PathPrefix(`/api/rsocket`)"
         - "traefik.http.routers.rsocket.entrypoints=web"
         - "traefik.http.routers.rsocket.service=rsocket"
-
+        - "traefik.http.routers.rsocket.priority=100"
 volumes:
   mongodb_data:
     driver: local
