@@ -8,6 +8,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HexFormat;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -58,7 +59,10 @@ public class PhotoService {
     }
 
     // Deduplicate by hash
-    Photo existing = photoRepository.findByHash(hash).orElse(null);
+    log.debug("[PHOTO] before_findByHash hash={}", hash);
+    Optional<Photo> existingOpt = photoRepository.findByHash(hash);
+    log.debug("[PHOTO] after_findByHash, hasValue={}", existingOpt.isPresent());
+    Photo existing = existingOpt.orElse(null);
     log.debug("[PHOTO] db_lookup hash={} existing={}", hash, existing);
     if (existing != null) {
       // cleanup temp file
