@@ -52,18 +52,18 @@ public class PhotoService {
       long hashStart = System.nanoTime();
       hash = sha256AndCopyToTemp(file, temp);
       long hashEnd = System.nanoTime();
-      log.debug("[PHOTO] hash+spill_to_disk ms={} size={} name={}",
+      log.info("[PHOTO] hash+spill_to_disk ms={} size={} name={}",
           (hashEnd - hashStart) / 1_000_000.0, file.getSize(), file.getOriginalFilename());
     } catch (IOException e) {
       throw new RuntimeException("임시 파일 생성/쓰기 중 오류가 발생했습니다.", e);
     }
 
     // Deduplicate by hash
-    log.debug("[PHOTO] before_findByHash hash={}", hash);
+    log.info("[PHOTO] before_findByHash hash={}", hash);
     Optional<Photo> existingOpt = photoRepository.findByHash(hash);
-    log.debug("[PHOTO] after_findByHash, hasValue={}", existingOpt.isPresent());
+    log.info("[PHOTO] after_findByHash, hasValue={}", existingOpt.isPresent());
     Photo existing = existingOpt.orElse(null);
-    log.debug("[PHOTO] db_lookup hash={} existing={}", hash, existing);
+    log.info("[PHOTO] db_lookup hash={} existing={}", hash, existing);
     if (existing != null) {
       // cleanup temp file
       try {
