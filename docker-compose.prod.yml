@@ -161,7 +161,7 @@ services:
         # 서비스 정의 (공통)
         - "traefik.http.services.api.loadbalancer.server.port=8080"
         # HTTP 라우팅 (CORS 미들웨어 적용)
-        - "traefik.http.routers.api.rule=PathPrefix(`/`) || PathPrefix(`/api`) || PathPrefix(`/actuator`) || PathPrefix(`/swagger`) || PathPrefix(`/health`)"
+        - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/actuator`) || PathPrefix(`/swagger`) || PathPrefix(`/health`)"
         - "traefik.http.routers.api.entrypoints=web"
         - "traefik.http.routers.api.service=api"
         - "traefik.http.routers.api.middlewares=api-cors"
@@ -170,6 +170,7 @@ services:
         - "traefik.http.routers.rsocket.rule=PathPrefix(`/api/rsocket`)"
         - "traefik.http.routers.rsocket.entrypoints=web"
         - "traefik.http.routers.rsocket.service=rsocket"
+        - "traefik.http.routers.rsocket.priority=100"
 
 volumes:
   mongodb_data:
