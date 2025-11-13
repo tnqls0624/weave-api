@@ -10,8 +10,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,14 +27,13 @@ public class ScheduleController {
   private final ScheduleService scheduleService;
 
   // 스케줄 작성
-  @SecurityRequirement(name = "JWT")
+//  @SecurityRequirement(name = "JWT")
   @Tag(name = "Schedule")
   @Operation(summary = "스케줄 작성")
   @PostMapping
-  public ApiResponse<ScheduleResponseDto> create(@Valid @RequestBody CreateRequestScheduleDto dto,
-      @AuthenticationPrincipal UserDetails userDetails
+  public ApiResponse<ScheduleResponseDto> create(@Valid @RequestBody CreateRequestScheduleDto dto
   ) {
-    return ApiResponse.ok(scheduleService.create(dto, userDetails.getUsername()));
+    return ApiResponse.ok(scheduleService.create(dto));
   }
 
   // 스케줄 조회
