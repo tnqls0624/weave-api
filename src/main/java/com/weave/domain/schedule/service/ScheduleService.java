@@ -27,7 +27,7 @@ public class ScheduleService {
   private final ScheduleNotificationService scheduleNotificationService;
 
   public ScheduleResponseDto create(CreateRequestScheduleDto dto) {
-
+    log.info("create schedule: {}", dto);
     Workspace workspace = workspaceRepository.findById(new ObjectId(dto.getWorkspace()))
         .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
 
