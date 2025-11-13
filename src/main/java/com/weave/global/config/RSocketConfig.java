@@ -28,6 +28,7 @@ public class RSocketConfig {
   public PayloadSocketAcceptorInterceptor authorization(RSocketSecurity security) {
     // 모든 요청 허용 (일단 인증 없이 테스트)
     security.authorizePayload(authorize -> authorize
+        .setup().permitAll()
         .anyRequest().permitAll()
         .anyExchange().permitAll()
     );

@@ -165,10 +165,11 @@ services:
         - "traefik.http.routers.api.entrypoints=web"
         - "traefik.http.routers.api.service=api"
         - "traefik.http.routers.api.middlewares=api-cors"
-        # RSocket WebSocket 라우팅 (HTTP로 처리, WebSocket 업그레이드 지원)
+        # RSocket WebSocket 라우팅
+        - "traefik.http.services.rsocket.loadbalancer.server.port=7070"
         - "traefik.http.routers.rsocket.rule=PathPrefix(`/api/rsocket`)"
         - "traefik.http.routers.rsocket.entrypoints=web"
-        - "traefik.http.routers.rsocket.service=api"
+        - "traefik.http.routers.rsocket.service=rsocket"
 
 volumes:
   mongodb_data:
