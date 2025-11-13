@@ -24,13 +24,6 @@ services:
       placement:
         constraints:
           - node.role == manager
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 128M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.dashboard.rule=Host(`traefik.weave.local`)"
@@ -72,9 +65,6 @@ services:
         limits:
           cpus: '0.5'
           memory: 384M
-        reservations:
-          cpus: '0.2'
-          memory: 256M
     ports:
       - target: 27017
         published: 27017
@@ -104,9 +94,6 @@ services:
         limits:
           cpus: '0.25'
           memory: 80M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
     healthcheck:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
       interval: 60s
@@ -175,13 +162,6 @@ services:
         delay: 5s
         max_attempts: 3
         window: 120s
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.5'
-          memory: 384M
       labels:
         - "traefik.enable=true"
         # CORS 미들웨어 정의
