@@ -32,7 +32,7 @@ public class ScheduleService {
   @Transactional
   public ScheduleResponseDto create(CreateRequestScheduleDto dto) {
 
-    Workspace workspace = workspaceRepository.findById(dto.getWorkspace())
+    Workspace workspace = workspaceRepository.findById(new ObjectId(dto.getWorkspace()))
         .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
 
     log.info("create schedule for workspace: {}", workspace.getId());

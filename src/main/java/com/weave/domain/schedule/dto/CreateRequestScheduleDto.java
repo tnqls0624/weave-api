@@ -9,7 +9,6 @@ import java.util.Date;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.bson.types.ObjectId;
 
 @Getter
 @Setter
@@ -17,7 +16,7 @@ public class CreateRequestScheduleDto {
 
   @Schema(description = "워크스페이스 ID")
   @NotNull
-  private ObjectId workspace;
+  private String workspace;
 
   @Schema(example = "누나생일", description = "제목")
   @NotBlank
