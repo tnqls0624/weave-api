@@ -85,12 +85,12 @@ public class PhotoService {
           .contentType(file.getContentType())
           .build();
 
-      log.log("[PHOTO] s3_put key={} contentType={}", key, file.getContentType());
+      log.info("[PHOTO] s3_put key={} contentType={}", key, file.getContentType());
 
       long s3Start = System.nanoTime();
       s3Client.putObject(putReq, RequestBody.fromFile(temp));
       long s3End = System.nanoTime();
-      log.log("[PHOTO] s3_put ms={}", (s3End - s3Start) / 1_000_000.0);
+      log.info("[PHOTO] s3_put ms={}", (s3End - s3Start) / 1_000_000.0);
     } finally {
       // Always try to delete temp file
       try {
