@@ -14,7 +14,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -40,7 +39,6 @@ public class PhotoService {
   @Value("${aws.region:}")
   private String region;
 
-  @Transactional
   public PhotoUploadResponseDto upload(MultipartFile file) {
     long t0 = System.nanoTime();
     validateImage(file);
