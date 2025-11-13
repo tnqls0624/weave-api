@@ -87,12 +87,8 @@ public class PhotoService {
 
       log.info("[PHOTO] s3_put key={} contentType={}", key, file.getContentType());
 
-      long s3Start = System.nanoTime();
       s3Client.putObject(putReq, RequestBody.fromFile(temp));
-      long s3End = System.nanoTime();
-      log.info("[PHOTO] s3_put ms={}", (s3End - s3Start) / 1_000_000.0);
     } finally {
-      // Always try to delete temp file
       try {
         if (temp != null) {
           java.nio.file.Files.deleteIfExists(temp);
