@@ -27,7 +27,7 @@ public class ScheduleController {
   private final ScheduleService scheduleService;
 
   // 스케줄 작성
-//  @SecurityRequirement(name = "JWT")
+  @SecurityRequirement(name = "JWT")
   @Tag(name = "Schedule")
   @Operation(summary = "스케줄 작성")
   @PostMapping

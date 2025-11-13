@@ -39,7 +39,6 @@ public class SecurityConfig {
         .httpBasic(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(
-                "/",
                 "/health",
                 "/auth/**",
                 "/user/invite/**",
