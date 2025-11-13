@@ -1,6 +1,7 @@
 package com.weave.global.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -77,12 +78,5 @@ public class RedisConfig {
         .hashValue(serializer)
         .build();
     return new ReactiveRedisTemplate<>(connectionFactory, serializationContext);
-  }
-
-  @Bean
-  public ObjectMapper objectMapper() {
-    ObjectMapper mapper = new ObjectMapper();
-    mapper.findAndRegisterModules();
-    return mapper;
   }
 }
