@@ -39,7 +39,12 @@ USER spring:spring
 EXPOSE 8080 7070
 
 # JVM 옵션 설정
-ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Djava.security.egd=file:/dev/./urandom"
+ENV JAVA_OPTS="\
+  -Xms128m \
+  -Xmx256m \
+  -XX:+UseG1GC \
+  -XX:MaxGCPauseMillis=200 \
+  -Djava.security.egd=file:/dev/./urandom"
 
 # 애플리케이션 실행
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

@@ -3,7 +3,6 @@ package com.weave.domain.location.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weave.domain.location.dto.LocationResponseDto;
-import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,6 +12,7 @@ import org.springframework.data.redis.connection.ReactiveSubscription;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.stereotype.Service;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
@@ -34,7 +34,7 @@ public class RedisMessageBroker {
   private final Map<String, Sinks.Many<LocationResponseDto>> localSinks = new ConcurrentHashMap<>();
 
   // Redis 구독 관리
-  private final Map<String, ReactiveSubscription> subscriptions = new ConcurrentHashMap<>();
+  private final Map<String, Disposable> subscriptions = new ConcurrentHashMap<>();
 
   private static final String CHANNEL_PREFIX = "workspace:location:";
 
@@ -68,25 +68,25 @@ public class RedisMessageBroker {
       return;
     }
 
-    reactiveRedisTemplate
+    Disposable subscription = reactiveRedisTemplate
         .listenTo(ChannelTopic.of(channel))
         .map(ReactiveSubscription.Message::getMessage)
-        .subscribe(
-            message -> {
-              try {
-                LocationResponseDto location = objectMapper.readValue(message, LocationResponseDto.class);
-                Sinks.Many<LocationResponseDto> sink = localSinks.get(workspaceId);
-                if (sink != null) {
-                  sink.tryEmitNext(location);
-                }
-              } catch (JsonProcessingException e) {
-                log.error("Failed to deserialize location message from Redis: {}", message, e);
-              }
-            },
-            error -> log.error("Error in Redis subscription for workspace {}", workspaceId, error),
-            () -> log.info("Redis subscription completed for workspace {}", workspaceId)
-        );
+        .doOnNext(message -> {
+          try {
+            LocationResponseDto location = objectMapper.readValue(message, LocationResponseDto.class);
+            Sinks.Many<LocationResponseDto> sink = localSinks.get(workspaceId);
+            if (sink != null) {
+              sink.tryEmitNext(location);
+            }
+          } catch (JsonProcessingException e) {
+            log.error("Failed to deserialize location message from Redis: {}", message, e);
+          }
+        })
+        .doOnError(error -> log.error("Error in Redis subscription for workspace {}", workspaceId, error))
+        .doOnComplete(() -> log.info("Redis subscription completed for workspace {}", workspaceId))
+        .subscribe();
 
+    subscriptions.put(workspaceId, subscription);
     log.info("Started Redis subscription for channel: {}", channel);
   }
 
@@ -101,7 +101,8 @@ public class RedisMessageBroker {
       reactiveRedisTemplate
           .convertAndSend(channel, message)
           .subscribe(
-              count -> log.debug("Published location to {} subscribers on channel: {}", count, channel),
+              count -> log.debug("Published location to {} subscribers on channel: {}", count,
+                  channel),
               error -> log.error("Failed to publish location to Redis channel: {}", channel, error)
           );
     } catch (JsonProcessingException e) {
@@ -114,9 +115,9 @@ public class RedisMessageBroker {
    */
   public void unsubscribe(String workspaceId) {
     localSinks.remove(workspaceId);
-    ReactiveSubscription subscription = subscriptions.remove(workspaceId);
-    if (subscription != null) {
-      subscription.cancel();
+    Disposable subscription = subscriptions.remove(workspaceId);
+    if (subscription != null && !subscription.isDisposed()) {
+      subscription.dispose();
       log.info("Unsubscribed from workspace: {}", workspaceId);
     }
   }
@@ -137,7 +138,7 @@ public class RedisMessageBroker {
   @PreDestroy
   public void cleanup() {
     log.info("Cleaning up Redis subscriptions");
-    subscriptions.values().forEach(ReactiveSubscription::cancel);
+    subscriptions.values().forEach(Disposable::dispose);
     subscriptions.clear();
     localSinks.clear();
   }

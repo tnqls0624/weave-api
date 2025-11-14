@@ -29,12 +29,6 @@ spring:
     servlet:
       path: /api
 
-  rsocket:
-    server:
-      port: 7070
-      transport: websocket
-      mapping-path: /api/rsocket
-
 server:
   port: 8080
   compression:

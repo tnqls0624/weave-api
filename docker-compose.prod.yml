@@ -179,12 +179,6 @@ services:
         - "traefik.http.routers.api.entrypoints=web"
         - "traefik.http.routers.api.service=api"
         - "traefik.http.routers.api.middlewares=api-cors"
-        # RSocket WebSocket 라우팅
-        - "traefik.http.services.rsocket.loadbalancer.server.port=7070"
-        - "traefik.http.routers.rsocket.rule=PathPrefix(`/api/rsocket`)"
-        - "traefik.http.routers.rsocket.entrypoints=web"
-        - "traefik.http.routers.rsocket.service=rsocket"
-        - "traefik.http.routers.rsocket.priority=100"
 volumes:
   mongodb_data:
     driver: local
