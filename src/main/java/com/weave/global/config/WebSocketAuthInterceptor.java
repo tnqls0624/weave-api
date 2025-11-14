@@ -30,7 +30,24 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         StompHeaderAccessor.class);
 
     if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
-      // CONNECT 시 JWT 토큰 검증
+      log.debug("Processing STOMP CONNECT");
+
+      // 이미 HTTP 핸드셰이크 시 인증이 완료되었는지 확인
+      if (SecurityContextHolder.getContext().getAuthentication() != null
+          && SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
+
+        // 이미 인증됨 - SecurityContext에서 정보 가져오기
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+
+        accessor.getSessionAttributes().put("userEmail", email);
+        accessor.setUser(auth);
+
+        log.info("WebSocket user already authenticated: {}", email);
+        return message;
+      }
+
+      // STOMP 헤더에서 토큰 추출 시도
       String token = extractToken(accessor);
 
       if (token != null && jwtTokenProvider.validateToken(token)) {
@@ -48,13 +65,13 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
           accessor.getSessionAttributes().put("userEmail", email);
           accessor.setUser(authentication);
 
-          log.info("WebSocket authenticated user: {}", email);
+          log.info("WebSocket authenticated user via STOMP header: {}", email);
         } catch (Exception e) {
           log.error("Error authenticating WebSocket user", e);
-          throw new IllegalArgumentException("Authentication failed");
+          throw new IllegalArgumentException("Authentication failed: " + e.getMessage());
         }
       } else {
-        log.warn("WebSocket connection without valid token");
+        log.error("WebSocket CONNECT without valid authentication");
         throw new IllegalArgumentException("Invalid or missing token");
       }
     }
