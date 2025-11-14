@@ -29,6 +29,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
     StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message,
         StompHeaderAccessor.class);
 
+    log.info("StompHeaderAccessor: {}", accessor);
+
     if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
       log.info("Processing STOMP CONNECT");
 
@@ -36,7 +38,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         // 이미 HTTP 핸드셰이크 시 인증이 완료되었는지 확인
         if (SecurityContextHolder.getContext().getAuthentication() != null
             && SecurityContextHolder.getContext().getAuthentication().isAuthenticated()
-            && !"anonymousUser".equals(SecurityContextHolder.getContext().getAuthentication().getName())) {
+            && !"anonymousUser".equals(
+            SecurityContextHolder.getContext().getAuthentication().getName())) {
 
           // 이미 인증됨 - SecurityContext에서 정보 가져오기
           var auth = SecurityContextHolder.getContext().getAuthentication();
@@ -70,7 +73,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
           return message;
         }
 
-        log.warn("WebSocket CONNECT without valid authentication - allowing connection but messages will require auth");
+        log.warn(
+            "WebSocket CONNECT without valid authentication - allowing connection but messages will require auth");
         // 인증 없이도 연결은 허용하되, 메시지 전송 시 인증 체크
         return message;
 

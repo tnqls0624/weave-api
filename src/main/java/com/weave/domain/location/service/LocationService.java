@@ -6,7 +6,6 @@ import com.weave.domain.location.entity.Location;
 import com.weave.domain.location.repository.LocationRepository;
 import com.weave.domain.user.entity.User;
 import com.weave.domain.user.repository.UserRepository;
-import com.weave.domain.workspace.repository.WorkspaceRepository;
 import com.weave.global.BusinessException;
 import com.weave.global.ErrorCode;
 import java.util.List;
@@ -22,7 +21,6 @@ import org.springframework.stereotype.Service;
 public class LocationService {
 
   private final LocationRepository locationRepository;
-  private final WorkspaceRepository workspaceRepository;
   private final UserRepository userRepository;
 
   public LocationResponseDto saveLocation(String workspaceId, LocationRequestDto dto,
