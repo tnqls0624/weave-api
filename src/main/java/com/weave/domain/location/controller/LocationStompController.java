@@ -38,7 +38,7 @@ public class LocationStompController {
     log.info("STOMP: Update location for workspace {}", workspaceId);
 
     // WebSocketAuthInterceptor에서 설정한 userEmail 사용
-    String userEmail = (String) headerAccessor.getSessionAttributes().get("userEmail");
+    String userEmail = headerAccessor.getUser().getName();
     if (userEmail == null) {
       log.warn("Unauthorized location update attempt for workspace {}", workspaceId);
       throw new IllegalStateException("Authentication required");

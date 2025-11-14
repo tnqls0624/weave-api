@@ -28,13 +28,21 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
-    registry
-        .addEndpoint("/api/ws")
-        .setAllowedOriginPatterns("*");
+    log.info("Registering WebSocket endpoints");
+    try {
+      // spring.mvc.servlet.path=/api 때문에 실제 경로는 /ws로 등록
+      registry
+          .addEndpoint("/ws")
+          .setAllowedOriginPatterns("*");
 
-    registry.addEndpoint("/api/ws")
-        .setAllowedOriginPatterns("*")
-        .withSockJS();
+      registry.addEndpoint("/ws")
+          .setAllowedOriginPatterns("*")
+          .withSockJS();
+      log.info("WebSocket endpoints registered successfully");
+    } catch (Exception e) {
+      log.error("Failed to register WebSocket endpoints", e);
+      throw e;
+    }
   }
 
   @Override
