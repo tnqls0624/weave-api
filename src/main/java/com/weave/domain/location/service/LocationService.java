@@ -6,7 +6,6 @@ import com.weave.domain.location.entity.Location;
 import com.weave.domain.location.repository.LocationRepository;
 import com.weave.domain.user.entity.User;
 import com.weave.domain.user.repository.UserRepository;
-import com.weave.domain.workspace.entity.Workspace;
 import com.weave.domain.workspace.repository.WorkspaceRepository;
 import com.weave.global.BusinessException;
 import com.weave.global.ErrorCode;
@@ -28,18 +27,12 @@ public class LocationService {
 
   public LocationResponseDto saveLocation(String workspaceId, LocationRequestDto dto,
       String email) {
+    log.info("save location: {}", dto);
+    log.info("save location by user: {}", email);
     // 워크스페이스 검증
-    Workspace workspace = workspaceRepository.findById(new ObjectId(workspaceId))
-        .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
-
     // 사용자 검증
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-    // 워크스페이스 참여자 검증
-    if (!workspace.getUsers().contains(user.getId())) {
-      throw new BusinessException(ErrorCode.WORKSPACE_ACCESS_DENIED);
-    }
 
     // 위치 저장
     Location location = Location.builder()
@@ -55,10 +48,6 @@ public class LocationService {
   }
 
   public List<LocationResponseDto> getLocations(String workspaceId) {
-    // 워크스페이스 검증
-    Workspace workspace = workspaceRepository.findById(new ObjectId(workspaceId))
-        .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
-
     // 워크스페이스의 모든 위치 조회
     List<Location> locations = locationRepository.findByWorkspaceIdOrderByTimestampDesc(
         new ObjectId(workspaceId));
