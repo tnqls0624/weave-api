@@ -16,6 +16,8 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   private final WebSocketAuthInterceptor webSocketAuthInterceptor;
+  private final JwtHandshakeInterceptor jwtHandshakeInterceptor;
+  private final CustomHandshakeHandler customHandshakeHandler;
 
   @Override
   public void configureMessageBroker(MessageBrokerRegistry registry) {
@@ -24,6 +26,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     // 클라이언트에서 메시지를 보낼 때 prefix
     registry.setApplicationDestinationPrefixes("/app");
+
+    // 사용자 목적지 프리픽스 설정
+    registry.setUserDestinationPrefix("/user");
   }
 
   @Override
@@ -33,9 +38,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
       // spring.mvc.servlet.path=/api 때문에 실제 경로는 /ws로 등록
       registry
           .addEndpoint("/ws")
+          .addInterceptors(jwtHandshakeInterceptor)
+          .setHandshakeHandler(customHandshakeHandler)
           .setAllowedOriginPatterns("*");
 
       registry.addEndpoint("/ws")
+          .addInterceptors(jwtHandshakeInterceptor)
+          .setHandshakeHandler(customHandshakeHandler)
           .setAllowedOriginPatterns("*")
           .withSockJS();
       log.info("WebSocket endpoints registered successfully");

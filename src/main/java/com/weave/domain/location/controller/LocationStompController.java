@@ -4,6 +4,7 @@ import com.weave.domain.location.dto.LocationRequestDto;
 import com.weave.domain.location.dto.LocationResponseDto;
 import com.weave.domain.location.service.LocationService;
 import com.weave.domain.location.service.RedisMessageBroker;
+import java.security.Principal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +12,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Controller;
@@ -33,16 +33,16 @@ public class LocationStompController {
   public void updateLocation(
       @DestinationVariable String workspaceId,
       @Payload LocationRequestDto dto,
-      SimpMessageHeaderAccessor headerAccessor) {
+      Principal principal) {
 
     log.info("STOMP: Update location for workspace {}", workspaceId);
 
-    // WebSocketAuthInterceptor에서 설정한 userEmail 사용
-    String userEmail = headerAccessor.getUser().getName();
-    if (userEmail == null) {
+    if (principal == null) {
       log.warn("Unauthorized location update attempt for workspace {}", workspaceId);
       throw new IllegalStateException("Authentication required");
     }
+
+    String userEmail = principal.getName();
 
     // 위치 저장
     LocationResponseDto response = locationService.saveLocation(workspaceId, dto, userEmail);
@@ -58,16 +58,19 @@ public class LocationStompController {
   @MessageMapping("/workspace/{workspaceId}/locations")
   public void getLocations(
       @DestinationVariable String workspaceId,
-      SimpMessageHeaderAccessor headerAccessor) {
+      Principal principal) {
 
     log.info("STOMP: Get locations for workspace {}", workspaceId);
 
+    if (principal == null) {
+      throw new IllegalStateException("Authentication required");
+    }
+
     List<LocationResponseDto> locations = locationService.getLocations(workspaceId);
 
-    // 요청한 클라이언트에게만 전송
-    String sessionId = headerAccessor.getSessionId();
+    // 요청한 사용자에게만 전송 (사용자 목적지)
     messagingTemplate.convertAndSendToUser(
-        sessionId,
+        principal.getName(),
         "/queue/locations",
         locations
     );
@@ -92,13 +95,15 @@ public class LocationStompController {
 
         // 초기 위치 데이터 전송
         List<LocationResponseDto> locations = locationService.getLocations(workspaceId);
-        String sessionId = accessor.getSessionId();
-
-        messagingTemplate.convertAndSendToUser(
-            sessionId,
-            "/queue/initial-locations",
-            locations
-        );
+        if (accessor.getUser() != null) {
+          messagingTemplate.convertAndSendToUser(
+              accessor.getUser().getName(),
+              "/queue/initial-locations",
+              locations
+          );
+        } else {
+          log.warn("Subscribe event without user principal for workspace {}", workspaceId);
+        }
 
         // Redis 구독 시작 (자동으로 브로드캐스트됨)
         subscribeToRedis(workspaceId);
