@@ -30,28 +30,29 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         StompHeaderAccessor.class);
 
     if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
-      log.debug("Processing STOMP CONNECT");
+      log.info("Processing STOMP CONNECT");
 
-      // 이미 HTTP 핸드셰이크 시 인증이 완료되었는지 확인
-      if (SecurityContextHolder.getContext().getAuthentication() != null
-          && SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
+      try {
+        // 이미 HTTP 핸드셰이크 시 인증이 완료되었는지 확인
+        if (SecurityContextHolder.getContext().getAuthentication() != null
+            && SecurityContextHolder.getContext().getAuthentication().isAuthenticated()
+            && !"anonymousUser".equals(SecurityContextHolder.getContext().getAuthentication().getName())) {
 
-        // 이미 인증됨 - SecurityContext에서 정보 가져오기
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName();
+          // 이미 인증됨 - SecurityContext에서 정보 가져오기
+          var auth = SecurityContextHolder.getContext().getAuthentication();
+          String email = auth.getName();
 
-        accessor.getSessionAttributes().put("userEmail", email);
-        accessor.setUser(auth);
+          accessor.getSessionAttributes().put("userEmail", email);
+          accessor.setUser(auth);
 
-        log.info("WebSocket user already authenticated: {}", email);
-        return message;
-      }
+          log.info("WebSocket user already authenticated: {}", email);
+          return message;
+        }
 
-      // STOMP 헤더에서 토큰 추출 시도
-      String token = extractToken(accessor);
+        // STOMP 헤더에서 토큰 추출 시도
+        String token = extractToken(accessor);
 
-      if (token != null && jwtTokenProvider.validateToken(token)) {
-        try {
+        if (token != null && jwtTokenProvider.validateToken(token)) {
           String email = jwtTokenProvider.getEmail(token);
           UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
@@ -66,13 +67,17 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
           accessor.setUser(authentication);
 
           log.info("WebSocket authenticated user via STOMP header: {}", email);
-        } catch (Exception e) {
-          log.error("Error authenticating WebSocket user", e);
-          throw new IllegalArgumentException("Authentication failed: " + e.getMessage());
+          return message;
         }
-      } else {
-        log.error("WebSocket CONNECT without valid authentication");
-        throw new IllegalArgumentException("Invalid or missing token");
+
+        log.warn("WebSocket CONNECT without valid authentication - allowing connection but messages will require auth");
+        // 인증 없이도 연결은 허용하되, 메시지 전송 시 인증 체크
+        return message;
+
+      } catch (Exception e) {
+        log.error("Error during WebSocket authentication", e);
+        // 예외가 발생해도 연결은 허용 (메시지 전송 시 인증 체크)
+        return message;
       }
     }
 
