@@ -26,6 +26,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     String header = request.getHeader("Authorization");
 
+    // 쿼리 파라미터에서 토큰 추출 (WebSocket 연결용)
+    if (header == null || !header.startsWith("Bearer ")) {
+      String token = request.getParameter("token");
+      if (token != null) {
+        header = "Bearer " + token;
+      }
+    }
+
     if (header != null && header.startsWith("Bearer ")) {
       String token = header.substring(7);
       if (jwtTokenProvider.validateToken(token)) {
