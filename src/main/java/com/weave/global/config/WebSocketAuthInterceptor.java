@@ -34,24 +34,28 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
       String token = extractToken(accessor);
 
       if (token != null && jwtTokenProvider.validateToken(token)) {
-        String email = jwtTokenProvider.getEmail(token);
-        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+        try {
+          String email = jwtTokenProvider.getEmail(token);
+          UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-        UsernamePasswordAuthenticationToken authentication =
-            new UsernamePasswordAuthenticationToken(userDetails, null,
-                userDetails.getAuthorities());
+          UsernamePasswordAuthenticationToken authentication =
+              new UsernamePasswordAuthenticationToken(userDetails, null,
+                  userDetails.getAuthorities());
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+          SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // 세션에 사용자 이메일 저장
-        accessor.getSessionAttributes().put("userEmail", email);
-        accessor.setUser(authentication);
+          // 세션에 사용자 이메일 저장
+          accessor.getSessionAttributes().put("userEmail", email);
+          accessor.setUser(authentication);
 
-        log.info("WebSocket authenticated user: {}", email);
+          log.info("WebSocket authenticated user: {}", email);
+        } catch (Exception e) {
+          log.error("Error authenticating WebSocket user", e);
+          throw new IllegalArgumentException("Authentication failed");
+        }
       } else {
         log.warn("WebSocket connection without valid token");
-        // TODO: 필요시 인증 실패 처리
-        // throw new IllegalArgumentException("Invalid token");
+        throw new IllegalArgumentException("Invalid or missing token");
       }
     }
 

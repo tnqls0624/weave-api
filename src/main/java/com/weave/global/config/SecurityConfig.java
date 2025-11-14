@@ -37,8 +37,12 @@ public class SecurityConfig {
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .formLogin(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)
+        .headers(headers -> headers
+            .frameOptions(frame -> frame.sameOrigin()) // WebSocket 연결을 위해 필요
+        )
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(
+                "/",
                 "/health",
                 "/auth/**",
                 "/user/invite/**",
