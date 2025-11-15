@@ -184,6 +184,11 @@ services:
         - "traefik.http.routers.api.entrypoints=web"
         - "traefik.http.routers.api.service=api"
         - "traefik.http.routers.api.middlewares=api-cors"
+    ports:
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: host
 volumes:
   mongodb_data:
     driver: local
