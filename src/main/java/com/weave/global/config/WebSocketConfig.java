@@ -24,9 +24,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     // 클라이언트에서 메시지를 보낼 때 prefix
     registry.setApplicationDestinationPrefixes("/app");
-
-    // 사용자 목적지 프리픽스 설정
-    registry.setUserDestinationPrefix("/user");
   }
 
   @Override
@@ -51,10 +48,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
     log.info("Configuring WebSocket inbound channel with auth interceptor");
-    if (webSocketAuthInterceptor != null) {
-      registration.interceptors(webSocketAuthInterceptor);
-    } else {
-      log.warn("WebSocketAuthInterceptor is null!");
-    }
-  }
+//    if (webSocketAuthInterceptor != null) {
+//      registration.interceptors(webSocketAuthInterceptor);
+//    } else {
+//      log.warn("WebSocketAuthInterceptor is null!");
+//    }
+//  }
 }
