@@ -53,5 +53,5 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 //    } else {
 //      log.warn("WebSocketAuthInterceptor is null!");
 //    }
-//  }
+  }
 }
