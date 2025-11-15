@@ -48,10 +48,10 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   @Override
   public void configureClientInboundChannel(ChannelRegistration registration) {
     log.info("Configuring WebSocket inbound channel with auth interceptor");
-//    if (webSocketAuthInterceptor != null) {
-//      registration.interceptors(webSocketAuthInterceptor);
-//    } else {
-//      log.warn("WebSocketAuthInterceptor is null!");
-//    }
+    if (webSocketAuthInterceptor != null) {
+      registration.interceptors(webSocketAuthInterceptor);
+    } else {
+      log.warn("WebSocketAuthInterceptor is null!");
+    }
   }
 }

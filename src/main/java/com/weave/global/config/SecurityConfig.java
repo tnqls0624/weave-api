@@ -49,9 +49,6 @@ public class SecurityConfig {
                 "/swagger/**",
                 "/v3/api-docs/**",
                 "/swagger-ui/**",
-                "/actuator/health",
-                "/actuator/info",
-                "/ws",
                 "/api/ws/**").permitAll() // 로그인, 회원가입, 헬스체크, WebSocket 허용
             .anyRequest().authenticated()
         ).addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
