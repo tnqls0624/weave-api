@@ -51,6 +51,10 @@ public class User {
   @Builder.Default
   private boolean pushEnabled = true;
 
+  @Field("location_enabled")
+  @Builder.Default
+  private boolean locationEnabled = false;
+
   @Field("thumbnail_image")
   private String avatarUrl;
 

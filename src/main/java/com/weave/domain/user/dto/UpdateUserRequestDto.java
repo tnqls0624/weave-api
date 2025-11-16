@@ -19,5 +19,6 @@ public class UpdateUserRequestDto {
 
   private String fcmToken;
   private Boolean pushEnabled;
+  private Boolean locationEnabled;
   private String avatarUrl;
 }

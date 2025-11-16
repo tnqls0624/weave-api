@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class UpdateNotificationRequestDto {
 
   private boolean pushEnabled;
+  private boolean locationEnabled;
 }

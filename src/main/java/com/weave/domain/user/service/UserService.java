@@ -26,6 +26,7 @@ public class UserService {
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
     user.setPushEnabled(dto.isPushEnabled());
+    user.setLocationEnabled(dto.isLocationEnabled());
     userRepository.save(user);
     return UserResponseDto.from(user);
   }
@@ -46,6 +47,10 @@ public class UserService {
     }
     if (dto.getPushEnabled() != null) {
       user.setPushEnabled(dto.getPushEnabled());
+    }
+
+    if (dto.getLocationEnabled() != null) {
+      user.setLocationEnabled(dto.getLocationEnabled());
     }
 
     userRepository.save(user);
