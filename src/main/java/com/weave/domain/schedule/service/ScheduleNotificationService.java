@@ -35,7 +35,7 @@ public class ScheduleNotificationService {
     String body = String.format("'%s' 일정이 등록되었습니다.", schedule.getTitle());
 
     participants.parallelStream()
-        .filter(User::isPushEnabled)
+        .filter(User::getPushEnabled)
         .forEach(user -> notificationService.sendPushNotification(user, title, body));
 
     log.info("Sent schedule creation notification to {} users", participants.size());

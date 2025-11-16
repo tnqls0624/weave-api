@@ -22,7 +22,7 @@ public class NotificationService {
       return;
     }
 
-    if (!user.isPushEnabled()) {
+    if (!user.getPushEnabled()) {
       log.info("User {} has disabled push notifications", user.getId());
       return;
     }

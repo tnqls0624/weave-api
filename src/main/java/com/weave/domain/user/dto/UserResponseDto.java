@@ -38,6 +38,9 @@ public class UserResponseDto {
   @Schema(description = "푸시 알림 허용 여부", example = "true")
   private boolean pushEnabled;
 
+  @Schema(description = "위치 사용 여부", example = "true")
+  private boolean locationEnabled;
+
   @Schema(description = "유저 프로필 이미지", example = "https://example.com/avatar.jpg")
   private String avatarUrl;
 
@@ -56,7 +59,8 @@ public class UserResponseDto {
         .birthday(user.getBirthday())
         .inviteCode(user.getInviteCode())
         .fcmToken(user.getFcmToken())
-        .pushEnabled(user.isPushEnabled())
+        .pushEnabled(user.getPushEnabled())
+        .locationEnabled(user.getLocationEnabled())
         .avatarUrl(user.getAvatarUrl())
         .createdAt(user.getCreatedAt())
         .updatedAt(user.getUpdatedAt())

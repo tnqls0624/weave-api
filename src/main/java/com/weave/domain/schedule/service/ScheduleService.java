@@ -28,7 +28,6 @@ public class ScheduleService {
 
   public ScheduleResponseDto create(CreateRequestScheduleDto dto) {
     log.info("create schedule: {}", dto);
-//    log.info("create schedule by user: {}", email);
     Workspace workspace = workspaceRepository.findById(new ObjectId(dto.getWorkspace()))
         .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
 

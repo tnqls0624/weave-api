@@ -49,7 +49,8 @@ public class NotificationScheduler {
     Date endOfDay = cal.getTime();
 
     // 오늘 시작하는 모든 일정 조회 (모든 워크스페이스)
-    List<Schedule> todaySchedules = scheduleRepository.findSchedulesStartingToday(startOfDay, endOfDay);
+    List<Schedule> todaySchedules = scheduleRepository.findSchedulesStartingToday(startOfDay,
+        endOfDay);
 
     log.info("Found {} schedules for today", todaySchedules.size());
 
@@ -69,7 +70,7 @@ public class NotificationScheduler {
       }
 
       // 일정 알림 설정이 켜져있는 유저에게만 알림 발송
-      if (user.isPushEnabled()) {
+      if (user.getPushEnabled()) {
         sendScheduleNotification(user, userSchedules);
       }
     }
