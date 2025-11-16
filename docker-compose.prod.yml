@@ -139,6 +139,7 @@ services:
       - JAVA_TOOL_OPTIONS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=50.0 -Xss256k -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+DisableExplicitGC
     volumes:
       - jwt_keys:/app/keys
+      - /home/ec2-user/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json:/app/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json:ro
     networks:
       - weave-network
     deploy:
