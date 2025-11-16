@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class FirebaseConfig {
 
-  @Value("${firebase.config-json:}")
+  @Value("${firebase.config-json:-}")
   private String configJsonString;
 
   @PostConstruct
@@ -54,6 +54,6 @@ public class FirebaseConfig {
           new ByteArrayInputStream(configJsonString.getBytes(StandardCharsets.UTF_8))
       );
     }
-    return null; // 아무 자격증명도 없으면 null → Init skip
+    return null;
   }
 }

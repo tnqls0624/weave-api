@@ -280,64 +280,33 @@ jobs:
           port: 22
           script: |
             # 환경별 변수 설정
-            if [[ "${{ env.ENVIRONMENT }}" == "production" ]]; then
+            # MongoDB
+            MONGODB_URI="${{ secrets.PROD_SPRING_DATA_MONGODB_URI }}"
+            MONGODB_ROOT_PASSWORD="${{ secrets.PROD_MONGODB_ROOT_PASSWORD }}"
 
-              # MongoDB
-              MONGODB_URI="${{ secrets.PROD_SPRING_DATA_MONGODB_URI }}"
-              MONGODB_ROOT_PASSWORD="${{ secrets.PROD_MONGODB_ROOT_PASSWORD }}"
+            # Redis
+            REDIS_PASSWORD="${{ secrets.PROD_REDIS_PASSWORD }}"
 
-              # Redis
-              REDIS_PASSWORD="${{ secrets.PROD_REDIS_PASSWORD }}"
+            # JWT
+            JWT_EXPIRATION="${{ secrets.PROD_JWT_EXPIRATION }}"
+            JWT_REFRESH_EXPIRATION="${{ secrets.PROD_JWT_REFRESH_EXPIRATION }}"
+            JWT_PRIVATE_KEY_PATH="${{ secrets.PROD_JWT_PRIVATE_KEY_PATH }}"
+            JWT_PUBLIC_KEY_PATH="${{ secrets.PROD_JWT_PUBLIC_KEY_PATH }}"
 
-              # JWT
-              JWT_EXPIRATION="${{ secrets.PROD_JWT_EXPIRATION }}"
-              JWT_REFRESH_EXPIRATION="${{ secrets.PROD_JWT_REFRESH_EXPIRATION }}"
-              JWT_PRIVATE_KEY_PATH="${{ secrets.PROD_JWT_PRIVATE_KEY_PATH }}"
-              JWT_PUBLIC_KEY_PATH="${{ secrets.PROD_JWT_PUBLIC_KEY_PATH }}"
+            # Holiday API
+            HOLIDAY_API_KEY="${{ secrets.PROD_HOLIDAY_API_KEY }}"
+            HOLIDAY_API_BASE_URL="${{ secrets.PROD_HOLIDAY_API_BASE_URL }}"
 
-              # Holiday API
-              HOLIDAY_API_KEY="${{ secrets.PROD_HOLIDAY_API_KEY }}"
-              HOLIDAY_API_BASE_URL="${{ secrets.PROD_HOLIDAY_API_BASE_URL }}"
+            # AWS
+            AWS_REGION="${{ secrets.PROD_AWS_REGION }}"
+            AWS_S3_BUCKET="${{ secrets.PROD_AWS_S3_BUCKET }}"
+            AWS_S3_PUBLIC_BASE_URL="${{ secrets.PROD_AWS_S3_PUBLIC_BASE_URL }}"
+            AWS_S3_UPLOAD_PREFIX="${{ secrets.PROD_AWS_S3_UPLOAD_PREFIX }}"
+            AWS_ACCESS_KEY_ID="${{ secrets.PROD_AWS_ACCESS_KEY_ID }}"
+            AWS_SECRET_ACCESS_KEY="${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}"
 
-              # AWS
-              AWS_REGION="${{ secrets.PROD_AWS_REGION }}"
-              AWS_S3_BUCKET="${{ secrets.PROD_AWS_S3_BUCKET }}"
-              AWS_S3_PUBLIC_BASE_URL="${{ secrets.PROD_AWS_S3_PUBLIC_BASE_URL }}"
-              AWS_S3_UPLOAD_PREFIX="${{ secrets.PROD_AWS_S3_UPLOAD_PREFIX }}"
-              AWS_ACCESS_KEY_ID="${{ secrets.PROD_AWS_ACCESS_KEY_ID }}"
-              AWS_SECRET_ACCESS_KEY="${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}"
-
-              # Firebase
-              FCM_CONFIG="${{ secrets.PROD_FCM_CONFIG }}"
-            else
-              # 개발계는 기존 시크릿 사용
-
-              # MongoDB
-              MONGODB_URI="${{ secrets.SPRING_DATA_MONGODB_URI }}"
-              MONGODB_ROOT_PASSWORD="${{ secrets.MONGODB_ROOT_PASSWORD }}"
-
-              # Redis
-              REDIS_PASSWORD="${{ secrets.REDIS_PASSWORD }}"
-
-              # JWT
-              JWT_EXPIRATION="${{ secrets.JWT_EXPIRATION }}"
-              JWT_REFRESH_EXPIRATION="${{ secrets.JWT_REFRESH_EXPIRATION }}"
-              JWT_PRIVATE_KEY_PATH="${{ secrets.JWT_PRIVATE_KEY_PATH }}"
-              JWT_PUBLIC_KEY_PATH="${{ secrets.JWT_PUBLIC_KEY_PATH }}"
-
-              # Holiday API
-              HOLIDAY_API_KEY="${{ secrets.HOLIDAY_API_KEY }}"
-              HOLIDAY_API_BASE_URL="${{ secrets.HOLIDAY_API_BASE_URL }}"
-
-              # AWS
-              AWS_REGION="${{ secrets.AWS_REGION }}"
-              AWS_S3_BUCKET="${{ secrets.AWS_S3_BUCKET }}"
-              AWS_S3_PUBLIC_BASE_URL="${{ secrets.AWS_S3_PUBLIC_BASE_URL }}"
-              AWS_S3_UPLOAD_PREFIX="${{ secrets.AWS_S3_UPLOAD_PREFIX }}"
-
-              # Firebase
-              FIREBASE_CONFIG_PATH="${{ secrets.FIREBASE_CONFIG_PATH }}"
-            fi
+            # Firebase
+            FCM_CONFIG="${{ secrets.PROD_FCM_CONFIG }}"
 
             # EC2에서 직접 배포 실행 (배포 파일은 이미 업로드됨)
             cd ~/deployment
