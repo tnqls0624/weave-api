@@ -391,7 +391,5 @@ jobs:
             
             ENVEOF
 
-            # 민감 정보는 환경변수로만 전달 (파일에 저장 안 함)
-            # deploy.sh가 이 환경변수들을 사용
             chmod +x deploy.sh
             ./deploy.sh
