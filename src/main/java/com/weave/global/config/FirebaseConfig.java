@@ -6,43 +6,54 @@ import com.google.firebase.FirebaseOptions;
 import com.weave.global.BusinessException;
 import com.weave.global.ErrorCode;
 import jakarta.annotation.PostConstruct;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 
 @Slf4j
 @Configuration
 public class FirebaseConfig {
 
-  @Value("${firebase.config-path}")
-  private String firebaseConfigPath;
+  @Value("${firebase.config-json:}")
+  private String configJsonString;
 
   @PostConstruct
   public void initialize() {
+    if (!FirebaseApp.getApps().isEmpty()) {
+      return;
+    }
+
     try {
-      if (FirebaseApp.getApps().isEmpty()) {
-        // Firebase 설정 파일이 없으면 초기화 생략
-        ClassPathResource resource = new ClassPathResource(firebaseConfigPath);
-        if (!resource.exists()) {
-          log.warn("Firebase config file not found: {}. Skipping Firebase initialization.", firebaseConfigPath);
-          return;
-        }
+      GoogleCredentials credentials = loadCredentials();
 
-        InputStream serviceAccount = resource.getInputStream();
-
-        FirebaseOptions options = FirebaseOptions.builder()
-            .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-            .build();
-
-        FirebaseApp.initializeApp(options);
-        log.info("Firebase initialized successfully");
+      if (credentials == null) {
+        log.warn("⚠ Firebase credentials not provided. Skipping Firebase initialization.");
+        return;
       }
-    } catch (IOException e) {
-      log.error("Failed to initialize Firebase", e);
+
+      FirebaseOptions options = FirebaseOptions.builder()
+          .setCredentials(credentials)
+          .build();
+
+      FirebaseApp.initializeApp(options);
+      log.info("🔥 Firebase initialized successfully");
+
+    } catch (Exception e) {
+      log.error("❌ Failed to initialize Firebase", e);
       throw new BusinessException(ErrorCode.INTERNAL_ERROR);
     }
+  }
+
+  private GoogleCredentials loadCredentials() throws IOException {
+    if (configJsonString != null && !configJsonString.isBlank()) {
+      log.info("Using inline JSON credentials for Firebase");
+      return GoogleCredentials.fromStream(
+          new ByteArrayInputStream(configJsonString.getBytes(StandardCharsets.UTF_8))
+      );
+    }
+    return null; // 아무 자격증명도 없으면 null → Init skip
   }
 }
