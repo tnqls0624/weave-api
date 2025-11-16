@@ -387,7 +387,7 @@ jobs:
             FORCE_UPDATE_TRAEFIK=${{ secrets.FORCE_UPDATE_TRAEFIK }}
             FORCE_UPDATE_MONGODB=${{ secrets.FORCE_UPDATE_MONGODB }}
             FORCE_UPDATE_REDIS=${{ secrets.FORCE_UPDATE_REDIS }}
-            FCM_CONFIG=${{FCM_CONFIG}}
+            FCM_CONFIG=${FCM_CONFIG}
             
             ENVEOF
 
