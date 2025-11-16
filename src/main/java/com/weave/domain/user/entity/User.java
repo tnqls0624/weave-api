@@ -3,8 +3,10 @@ package com.weave.domain.user.entity;// User.java
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Date;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
@@ -15,6 +17,8 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 @Document(collection = "users")
 @Data
+@@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class User {
 
@@ -49,11 +53,11 @@ public class User {
 
   @Field("push_enabled")
   @Builder.Default
-  private boolean pushEnabled = true;
+  private Boolean pushEnabled = true;
 
   @Field("location_enabled")
   @Builder.Default
-  private boolean locationEnabled = false;
+  private Boolean locationEnabled = false;
 
   @Field("thumbnail_image")
   private String avatarUrl;
