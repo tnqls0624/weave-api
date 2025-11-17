@@ -50,7 +50,6 @@ jwt:
 # =========================
 firebase:
   config-path: /app/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json
-#  config-json: ${FCM_CONFIG}
 
 # =========================
 # Holiday API

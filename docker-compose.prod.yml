@@ -129,8 +129,7 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
-      # Firebase
-      - FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH:-weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json}
+      - FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH:-/app/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json}
 
       # Timezone
       - TZ=Asia/Seoul
