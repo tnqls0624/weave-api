@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 public class UpdateNotificationRequestDto {
 
   private boolean pushEnabled;
-  private boolean fcmToken;
+  private String fcmToken;
   private boolean locationEnabled;
 }

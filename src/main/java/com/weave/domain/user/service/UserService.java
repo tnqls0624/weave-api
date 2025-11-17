@@ -26,6 +26,7 @@ public class UserService {
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
     user.setPushEnabled(dto.isPushEnabled());
+    user.setFcmToken(dto.getFcmToken());
     user.setLocationEnabled(dto.isLocationEnabled());
     userRepository.save(user);
     return UserResponseDto.from(user);

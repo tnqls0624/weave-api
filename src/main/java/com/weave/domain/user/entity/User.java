@@ -48,6 +48,7 @@ public class User {
   private String inviteCode;
 
   @Field("fcm_token")
+  @Builder.Default
   @Indexed(unique = true, sparse = true)
   private String fcmToken;
 
