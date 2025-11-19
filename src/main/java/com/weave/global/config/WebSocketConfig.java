@@ -16,6 +16,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   private final WebSocketAuthInterceptor webSocketAuthInterceptor;
+  private final WebSocketHandshakeInterceptor webSocketHandshakeInterceptor;
 
   @Override
   public void configureMessageBroker(MessageBrokerRegistry registry) {
@@ -33,10 +34,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
       // spring.mvc.servlet.path=/api 때문에 실제 경로는 /ws로 등록
       registry
           .addEndpoint("/ws")
-          .setAllowedOriginPatterns("*");
+          .setAllowedOriginPatterns("*")
+          .addInterceptors(webSocketHandshakeInterceptor);
 
       registry.addEndpoint("/ws")
           .setAllowedOriginPatterns("*")
+          .addInterceptors(webSocketHandshakeInterceptor)
           .withSockJS();
       log.info("WebSocket endpoints registered successfully");
     } catch (Exception e) {
