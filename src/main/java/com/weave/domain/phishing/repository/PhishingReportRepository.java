@@ -1,0 +1,126 @@
+package com.weave.domain.phishing.repository;
+
+import com.weave.domain.phishing.entity.PhishingReport;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import org.bson.types.ObjectId;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+import org.springframework.stereotype.Repository;
+
+/**
+ * 피싱 신고 리포지토리
+ */
+@Repository
+public interface PhishingReportRepository extends MongoRepository<PhishingReport, ObjectId> {
+
+  /**
+   * SMS ID로 조회
+   */
+  Optional<PhishingReport> findBySmsId(String smsId);
+
+  /**
+   * 사용자 ID로 조회
+   */
+  Page<PhishingReport> findByUserIdOrderByTimestampDesc(ObjectId userId, Pageable pageable);
+
+  /**
+   * 워크스페이스 ID로 조회
+   */
+  Page<PhishingReport> findByWorkspaceIdOrderByTimestampDesc(ObjectId workspaceId, Pageable pageable);
+
+  /**
+   * 사용자 이메일로 조회
+   */
+  List<PhishingReport> findByUserEmailOrderByTimestampDesc(String userEmail);
+
+  /**
+   * 위험 수준으로 조회
+   */
+  List<PhishingReport> findByRiskLevelOrderByTimestampDesc(String riskLevel);
+
+  /**
+   * 발신자로 조회
+   */
+  List<PhishingReport> findBySenderOrderByTimestampDesc(String sender);
+
+  /**
+   * 상태로 조회
+   */
+  List<PhishingReport> findByStatusOrderByTimestampDesc(String status);
+
+  /**
+   * 기간별 조회
+   */
+  List<PhishingReport> findByTimestampBetweenOrderByTimestampDesc(Date start, Date end);
+
+  /**
+   * 워크스페이스별 기간 조회
+   */
+  @Query("{ 'workspaceId': ?0, 'timestamp': { $gte: ?1, $lte: ?2 } }")
+  List<PhishingReport> findByWorkspaceAndTimestamp(ObjectId workspaceId, Date start, Date end);
+
+  /**
+   * 위치 기반 조회 (근처 피싱 알림)
+   */
+  @Query("{ 'location': { $near: { $geometry: { type: 'Point', coordinates: [?0, ?1] }, $maxDistance: ?2 } } }")
+  List<PhishingReport> findNearbyReports(double longitude, double latitude, double maxDistance);
+
+  /**
+   * 고위험 미처리 건 조회
+   */
+  @Query("{ 'riskLevel': 'high', 'status': 'pending' }")
+  List<PhishingReport> findHighRiskPendingReports();
+
+  /**
+   * 자동 차단된 건 조회
+   */
+  List<PhishingReport> findByAutoBlockedTrue();
+
+  /**
+   * 워크스페이스별 통계용 카운트
+   */
+  long countByWorkspaceIdAndRiskLevel(ObjectId workspaceId, String riskLevel);
+
+  /**
+   * 사용자별 통계용 카운트
+   */
+  long countByUserIdAndRiskLevel(ObjectId userId, String riskLevel);
+
+  /**
+   * 기간별 피싱 수 카운트
+   */
+  long countByTimestampBetween(Date start, Date end);
+
+  /**
+   * SMS ID 중복 체크
+   */
+  boolean existsBySmsId(String smsId);
+
+  /**
+   * 발신자별 최근 피싱 보고 조회
+   */
+  @Query(value = "{ 'sender': ?0 }", sort = "{ 'timestamp': -1 }")
+  Page<PhishingReport> findRecentBySender(String sender, Pageable pageable);
+
+  /**
+   * 오늘 신고된 피싱 조회
+   */
+  @Query("{ 'timestamp': { $gte: ?0 } }")
+  List<PhishingReport> findTodayReports(Date todayStart);
+
+  /**
+   * 미검증 피싱 신고 조회
+   */
+  @Query("{ 'status': 'pending', 'verifiedAt': null }")
+  Page<PhishingReport> findUnverifiedReports(Pageable pageable);
+
+  /**
+   * 사용자 피드백이 있는 신고 조회
+   */
+  @Query("{ 'userFeedback': { $exists: true, $ne: null } }")
+  List<PhishingReport> findReportsWithFeedback();
+}
