@@ -15,8 +15,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 /**
- * 피싱 패턴 엔티티
- * 피싱 탐지에 사용되는 패턴 규칙 저장
+ * 피싱 패턴 엔티티 피싱 탐지에 사용되는 패턴 규칙 저장
  */
 @Document(collection = "phishing_patterns")
 @Data
@@ -141,7 +140,7 @@ public class PhishingPattern {
   public void updateAccuracy() {
     if (matchCount > 0 || falsePositiveCount > 0) {
       this.accuracy = matchCount.doubleValue() /
-        (matchCount.doubleValue() + falsePositiveCount.doubleValue());
+          (matchCount.doubleValue() + falsePositiveCount.doubleValue());
     }
   }
 }

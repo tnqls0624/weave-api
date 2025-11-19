@@ -1,13 +1,20 @@
 package com.weave.domain.phishing.dto;
 
 import com.weave.domain.phishing.entity.PhishingPattern;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import java.util.Date;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.bson.types.ObjectId;
 
 /**
  * 피싱 패턴 DTO
@@ -30,7 +37,7 @@ public class PhishingPatternDto {
 
   @NotBlank(message = "카테고리는 필수입니다")
   @Pattern(regexp = "financial|government|delivery|shopping|other",
-    message = "유효한 카테고리를 선택해주세요")
+      message = "유효한 카테고리를 선택해주세요")
   private String category;
 
   @NotBlank(message = "패턴 타입은 필수입니다")
@@ -73,25 +80,25 @@ public class PhishingPatternDto {
     }
 
     return PhishingPatternDto.builder()
-      .id(pattern.getId() != null ? pattern.getId().toString() : null)
-      .name(pattern.getName())
-      .description(pattern.getDescription())
-      .category(pattern.getCategory())
-      .type(pattern.getType())
-      .patterns(pattern.getPatterns())
-      .riskLevel(pattern.getRiskLevel())
-      .weight(pattern.getWeight())
-      .language(pattern.getLanguage())
-      .isActive(pattern.getIsActive())
-      .matchCount(pattern.getMatchCount())
-      .falsePositiveCount(pattern.getFalsePositiveCount())
-      .accuracy(pattern.getAccuracy())
-      .lastUsedAt(pattern.getLastUsedAt())
-      .createdBy(pattern.getCreatedBy())
-      .updatedBy(pattern.getUpdatedBy())
-      .createdAt(pattern.getCreatedAt())
-      .updatedAt(pattern.getUpdatedAt())
-      .build();
+        .id(pattern.getId() != null ? pattern.getId().toString() : null)
+        .name(pattern.getName())
+        .description(pattern.getDescription())
+        .category(pattern.getCategory())
+        .type(pattern.getType())
+        .patterns(pattern.getPatterns())
+        .riskLevel(pattern.getRiskLevel())
+        .weight(pattern.getWeight())
+        .language(pattern.getLanguage())
+        .isActive(pattern.getIsActive())
+        .matchCount(pattern.getMatchCount())
+        .falsePositiveCount(pattern.getFalsePositiveCount())
+        .accuracy(pattern.getAccuracy())
+        .lastUsedAt(pattern.getLastUsedAt())
+        .createdBy(pattern.getCreatedBy())
+        .updatedBy(pattern.getUpdatedBy())
+        .createdAt(pattern.getCreatedAt())
+        .updatedAt(pattern.getUpdatedAt())
+        .build();
   }
 
   /**
