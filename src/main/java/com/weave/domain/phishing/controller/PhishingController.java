@@ -322,6 +322,7 @@ public class PhishingController {
    * 피싱 탐지 결과 DTO
    */
   public static class PhishingDetectionResult {
+
     private boolean isPhishing;
     private double riskScore;
     private String riskLevel;
