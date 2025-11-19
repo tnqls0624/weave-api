@@ -63,10 +63,10 @@ public class PhishingController {
     log.info("피싱 신고 API 호출 - 사용자: {}", principal.getName());
 
     PhishingReportResponseDto response = phishingGuardService.reportPhishing(
-      principal.getName(), request);
+        principal.getName(), request);
 
     return ResponseEntity.status(HttpStatus.CREATED)
-      .body(ApiResponse.success(response));
+        .body(ApiResponse.ok(response));
   }
 
   /**
@@ -79,9 +79,9 @@ public class PhishingController {
       Principal principal) {
 
     Page<PhishingReportResponseDto> reports = phishingGuardService.getReports(
-      principal.getName(), pageable);
+        principal.getName(), pageable);
 
-    return ResponseEntity.ok(ApiResponse.success(reports));
+    return ResponseEntity.ok(ApiResponse.ok(reports));
   }
 
   /**
@@ -94,9 +94,9 @@ public class PhishingController {
       @PageableDefault(size = 20, sort = "timestamp", direction = Sort.Direction.DESC) Pageable pageable) {
 
     Page<PhishingReportResponseDto> reports = phishingGuardService.getWorkspaceReports(
-      workspaceId, pageable);
+        workspaceId, pageable);
 
-    return ResponseEntity.ok(ApiResponse.success(reports));
+    return ResponseEntity.ok(ApiResponse.ok(reports));
   }
 
   /**
@@ -108,7 +108,7 @@ public class PhishingController {
       @PathVariable String reportId) {
 
     PhishingReportResponseDto report = phishingGuardService.getReport(reportId);
-    return ResponseEntity.ok(ApiResponse.success(report));
+    return ResponseEntity.ok(ApiResponse.ok(report));
   }
 
   /**
@@ -123,9 +123,9 @@ public class PhishingController {
 
     String feedback = request.get("feedback");
     PhishingReportResponseDto updated = phishingGuardService.addUserFeedback(
-      reportId, principal.getName(), feedback);
+        reportId, principal.getName(), feedback);
 
-    return ResponseEntity.ok(ApiResponse.success(updated));
+    return ResponseEntity.ok(ApiResponse.ok(updated));
   }
 
   /**
@@ -137,7 +137,7 @@ public class PhishingController {
       Principal principal) {
 
     PhishingStatisticsDto stats = phishingGuardService.getStatistics(principal.getName());
-    return ResponseEntity.ok(ApiResponse.success(stats));
+    return ResponseEntity.ok(ApiResponse.ok(stats));
   }
 
   /**
@@ -149,7 +149,7 @@ public class PhishingController {
       @PathVariable String workspaceId) {
 
     PhishingStatisticsDto stats = phishingGuardService.getWorkspaceStatistics(workspaceId);
-    return ResponseEntity.ok(ApiResponse.success(stats));
+    return ResponseEntity.ok(ApiResponse.ok(stats));
   }
 
   /**
@@ -163,9 +163,9 @@ public class PhishingController {
       @RequestParam(defaultValue = "5000") @Parameter(description = "반경(미터)") double radius) {
 
     List<PhishingReportResponseDto> reports = phishingGuardService.getNearbyReports(
-      latitude, longitude, radius);
+        latitude, longitude, radius);
 
-    return ResponseEntity.ok(ApiResponse.success(reports));
+    return ResponseEntity.ok(ApiResponse.ok(reports));
   }
 
   /**
@@ -179,12 +179,12 @@ public class PhishingController {
     log.info("피싱 검사 요청 - 발신자: {}", request.getSender());
 
     PhishingDetectionResult result = detectionService.detectPhishing(
-      request.getSender(),
-      request.getMessage(),
-      request.getSensitivityLevel()
+        request.getSender(),
+        request.getMessage(),
+        request.getSensitivityLevel()
     );
 
-    return ResponseEntity.ok(ApiResponse.success(result));
+    return ResponseEntity.ok(ApiResponse.ok(result));
   }
 
   /**
@@ -199,7 +199,7 @@ public class PhishingController {
       @RequestParam(defaultValue = "true") boolean activeOnly) {
 
     List<PhishingPatternDto> patterns = patternService.getPatterns(category, language, activeOnly);
-    return ResponseEntity.ok(ApiResponse.success(patterns));
+    return ResponseEntity.ok(ApiResponse.ok(patterns));
   }
 
   /**
@@ -216,7 +216,7 @@ public class PhishingController {
 
     PhishingPatternDto created = patternService.createPattern(request, principal.getName());
     return ResponseEntity.status(HttpStatus.CREATED)
-      .body(ApiResponse.success(created));
+        .body(ApiResponse.ok(created));
   }
 
   /**
@@ -230,8 +230,9 @@ public class PhishingController {
       @Valid @RequestBody PhishingPatternDto request,
       Principal principal) {
 
-    PhishingPatternDto updated = patternService.updatePattern(patternId, request, principal.getName());
-    return ResponseEntity.ok(ApiResponse.success(updated));
+    PhishingPatternDto updated = patternService.updatePattern(patternId, request,
+        principal.getName());
+    return ResponseEntity.ok(ApiResponse.ok(updated));
   }
 
   /**
@@ -244,7 +245,7 @@ public class PhishingController {
       @PathVariable String patternId) {
 
     patternService.deletePattern(patternId);
-    return ResponseEntity.ok(ApiResponse.success(null));
+    return ResponseEntity.ok(ApiResponse.ok(null));
   }
 
   /**
@@ -256,7 +257,7 @@ public class PhishingController {
   public ResponseEntity<ApiResponse<List<PhishingReportResponseDto>>> getHighRiskPendingReports() {
 
     List<PhishingReportResponseDto> reports = phishingGuardService.getHighRiskPendingReports();
-    return ResponseEntity.ok(ApiResponse.success(reports));
+    return ResponseEntity.ok(ApiResponse.ok(reports));
   }
 
   /**
@@ -273,15 +274,16 @@ public class PhishingController {
     String adminNote = request.get("adminNote");
 
     PhishingReportResponseDto updated = phishingGuardService.updateReportStatus(
-      reportId, status, adminNote);
+        reportId, status, adminNote);
 
-    return ResponseEntity.ok(ApiResponse.success(updated));
+    return ResponseEntity.ok(ApiResponse.ok(updated));
   }
 
   /**
    * 피싱 탐지 요청 DTO
    */
   public static class PhishingDetectionRequest {
+
     @NotBlank
     private String sender;
 
