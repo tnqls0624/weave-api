@@ -5,19 +5,25 @@ import com.weave.domain.user.entity.User;
 import com.weave.domain.user.repository.UserRepository;
 import com.weave.domain.workspace.entity.Workspace;
 import com.weave.domain.workspace.repository.WorkspaceRepository;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * 피싱 알림 서비스
- * FCM을 통한 푸시 알림 전송
+ * 피싱 알림 서비스 FCM을 통한 푸시 알림 전송
  */
 @Slf4j
 @Service
@@ -66,7 +72,8 @@ public class PhishingNotificationService {
   /**
    * 워크스페이스 멤버 알림
    */
-  public void notifyWorkspaceMembers(ObjectId workspaceId, String title, String body, PhishingReport report) {
+  public void notifyWorkspaceMembers(ObjectId workspaceId, String title, String body,
+      PhishingReport report) {
     try {
       Optional<Workspace> workspaceOpt = workspaceRepository.findById(workspaceId);
       if (workspaceOpt.isEmpty()) {
@@ -75,8 +82,8 @@ public class PhishingNotificationService {
 
       Workspace workspace = workspaceOpt.get();
       List<String> memberIds = workspace.getUsers().stream()
-        .map(ObjectId::toString)
-        .collect(java.util.stream.Collectors.toList());
+          .map(ObjectId::toString)
+          .collect(java.util.stream.Collectors.toList());
 
       // 본인 제외
       memberIds.remove(report.getUserId().toString());
@@ -86,10 +93,8 @@ public class PhishingNotificationService {
         memberIds.forEach(memberId -> {
           try {
             Optional<User> memberOpt = userRepository.findById(new ObjectId(memberId));
-            if (memberOpt.isPresent()) {
-              User member = memberOpt.get();
-              sendPushNotification(member.getFcmToken(), title, body, createDataPayload(report));
-            }
+            memberOpt.ifPresent(member -> sendPushNotification(member.getFcmToken(), title, body,
+                createDataPayload(report)));
           } catch (Exception e) {
             log.error("Failed to notify workspace member: {}", memberId, e);
           }
@@ -119,7 +124,7 @@ public class PhishingNotificationService {
       Double detectionRate = (Double) stats.getOrDefault("detectionRate", 0.0);
 
       String body = String.format("검사: %d건, 탐지: %d건 (탐지율: %.1f%%)",
-        totalScanned, phishingDetected, detectionRate * 100);
+          totalScanned, phishingDetected, detectionRate * 100);
 
       Map<String, Object> data = new HashMap<>();
       data.put("type", "statistics_report");
@@ -151,15 +156,15 @@ public class PhishingNotificationService {
       data.put("type", "nearby_alert");
       data.put("count", nearbyReports.size());
       data.put("reports", nearbyReports.stream()
-        .limit(5)  // 최대 5개만
-        .map(report -> {
-          Map<String, Object> summary = new HashMap<>();
-          summary.put("id", report.getId().toString());
-          summary.put("sender", report.getSender());
-          summary.put("riskLevel", report.getRiskLevel());
-          return summary;
-        })
-        .toList());
+          .limit(5)  // 최대 5개만
+          .map(report -> {
+            Map<String, Object> summary = new HashMap<>();
+            summary.put("id", report.getId().toString());
+            summary.put("sender", report.getSender());
+            summary.put("riskLevel", report.getRiskLevel());
+            return summary;
+          })
+          .toList());
 
       sendPushNotification(user.getFcmToken(), title, body, data);
 
@@ -171,10 +176,11 @@ public class PhishingNotificationService {
   /**
    * 패턴 업데이트 알림 (관리자용)
    */
-  public void sendPatternUpdateNotification(List<String> adminIds, String action, String patternName) {
+  public void sendPatternUpdateNotification(List<String> adminIds, String action,
+      String patternName) {
     String title = "🔧 피싱 패턴 업데이트";
     String body = String.format("패턴 '%s'이(가) %s되었습니다.", patternName,
-      action.equals("create") ? "추가" : action.equals("update") ? "수정" : "삭제");
+        action.equals("create") ? "추가" : action.equals("update") ? "수정" : "삭제");
 
     Map<String, Object> data = new HashMap<>();
     data.put("type", "pattern_update");
@@ -184,9 +190,7 @@ public class PhishingNotificationService {
     adminIds.forEach(adminId -> {
       try {
         Optional<User> adminOpt = userRepository.findById(new ObjectId(adminId));
-        if (adminOpt.isPresent()) {
-          sendPushNotification(adminOpt.get().getFcmToken(), title, body, data);
-        }
+        adminOpt.ifPresent(user -> sendPushNotification(user.getFcmToken(), title, body, data));
       } catch (Exception e) {
         log.error("Failed to notify admin: {}", adminId, e);
       }
@@ -196,7 +200,8 @@ public class PhishingNotificationService {
   /**
    * FCM 푸시 알림 전송
    */
-  private void sendPushNotification(String fcmToken, String title, String body, Map<String, Object> data) {
+  private void sendPushNotification(String fcmToken, String title, String body,
+      Map<String, Object> data) {
     if (fcmToken == null || fcmToken.isEmpty()) {
       log.debug("No FCM token available for notification");
       return;
@@ -226,7 +231,8 @@ public class PhishingNotificationService {
       message.put("priority", "high");
 
       HttpEntity<Map<String, Object>> request = new HttpEntity<>(message, headers);
-      ResponseEntity<String> response = restTemplate.postForEntity(fcmApiUrl, request, String.class);
+      ResponseEntity<String> response = restTemplate.postForEntity(fcmApiUrl, request,
+          String.class);
 
       if (response.getStatusCode() == HttpStatus.OK) {
         log.debug("Push notification sent successfully");
@@ -251,10 +257,12 @@ public class PhishingNotificationService {
     data.put("riskScore", report.getRiskScore());
     data.put("timestamp", report.getTimestamp().getTime());
 
-    if (report.getLocation() != null && report.getLocation().getCoordinates() != null) {
+    if (report.getLocation() != null
+        && report.getLocation().getLatitude() != null
+        && report.getLocation().getLongitude() != null) {
       Map<String, Double> location = new HashMap<>();
-      location.put("latitude", report.getLocation().getCoordinates().get(1));
-      location.put("longitude", report.getLocation().getCoordinates().get(0));
+      location.put("latitude", report.getLocation().getLatitude());
+      location.put("longitude", report.getLocation().getLongitude());
       data.put("location", location);
     }
 
@@ -264,14 +272,13 @@ public class PhishingNotificationService {
   /**
    * 일괄 알림 전송 (배치)
    */
-  public void sendBatchNotifications(List<String> userIds, String title, String body, Map<String, Object> data) {
+  public void sendBatchNotifications(List<String> userIds, String title, String body,
+      Map<String, Object> data) {
     CompletableFuture.runAsync(() -> {
       userIds.parallelStream().forEach(userId -> {
         try {
           Optional<User> userOpt = userRepository.findById(new ObjectId(userId));
-          if (userOpt.isPresent()) {
-            sendPushNotification(userOpt.get().getFcmToken(), title, body, data);
-          }
+          userOpt.ifPresent(user -> sendPushNotification(user.getFcmToken(), title, body, data));
         } catch (Exception e) {
           log.error("Failed to send batch notification to user: {}", userId, e);
         }

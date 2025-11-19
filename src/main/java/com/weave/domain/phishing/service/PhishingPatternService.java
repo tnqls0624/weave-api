@@ -5,7 +5,12 @@ import com.weave.domain.phishing.entity.PhishingPattern;
 import com.weave.domain.phishing.repository.PhishingPatternRepository;
 import com.weave.global.exception.BusinessException;
 import com.weave.global.exception.ErrorCode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,11 +35,13 @@ public class PhishingPatternService {
    * 패턴 목록 조회
    */
   @Cacheable(value = "phishingPatterns", key = "#category + '_' + #language + '_' + #activeOnly")
-  public List<PhishingPatternDto> getPatterns(String category, String language, boolean activeOnly) {
+  public List<PhishingPatternDto> getPatterns(String category, String language,
+      boolean activeOnly) {
     List<PhishingPattern> patterns;
 
     if (category != null && language != null) {
-      patterns = patternRepository.findByCategoryAndLanguageAndIsActive(category, language, activeOnly);
+      patterns = patternRepository.findByCategoryAndLanguageAndIsActive(category, language,
+          activeOnly);
     } else if (category != null) {
       patterns = patternRepository.findByCategoryAndIsActive(category, activeOnly);
     } else if (language != null) {
@@ -44,8 +51,8 @@ public class PhishingPatternService {
     }
 
     return patterns.stream()
-      .map(PhishingPatternDto::from)
-      .collect(Collectors.toList());
+        .map(PhishingPatternDto::from)
+        .collect(Collectors.toList());
   }
 
   /**
@@ -53,7 +60,7 @@ public class PhishingPatternService {
    */
   public PhishingPatternDto getPattern(String patternId) {
     PhishingPattern pattern = patternRepository.findById(new ObjectId(patternId))
-      .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
     return PhishingPatternDto.from(pattern);
   }
@@ -84,7 +91,7 @@ public class PhishingPatternService {
     pattern.setWeight(dto.getWeight());
     pattern.setLanguage(dto.getLanguage());
     pattern.setIsActive(true);
-    pattern.setCreatedBy(createdBy);
+    pattern.setCreatedBy(new ObjectId(createdBy));
     pattern.setCreatedAt(new Date());
     pattern.setUpdatedAt(new Date());
 
@@ -106,11 +113,12 @@ public class PhishingPatternService {
    */
   @Transactional
   @CacheEvict(value = "phishingPatterns", allEntries = true)
-  public PhishingPatternDto updatePattern(String patternId, PhishingPatternDto dto, String updatedBy) {
+  public PhishingPatternDto updatePattern(String patternId, PhishingPatternDto dto,
+      String updatedBy) {
     log.info("Updating phishing pattern: {} by {}", patternId, updatedBy);
 
     PhishingPattern pattern = patternRepository.findById(new ObjectId(patternId))
-      .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
     // 패턴 유효성 검증
     validatePattern(dto);
@@ -144,7 +152,7 @@ public class PhishingPatternService {
       pattern.setIsActive(dto.getIsActive());
     }
 
-    pattern.setUpdatedBy(updatedBy);
+    pattern.setUpdatedBy(new ObjectId(updatedBy));
     pattern.setUpdatedAt(new Date());
 
     PhishingPattern saved = patternRepository.save(pattern);
@@ -164,7 +172,7 @@ public class PhishingPatternService {
     log.info("Deleting phishing pattern: {}", patternId);
 
     PhishingPattern pattern = patternRepository.findById(new ObjectId(patternId))
-      .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
     String patternName = pattern.getName();
     patternRepository.deleteById(new ObjectId(patternId));
@@ -180,7 +188,7 @@ public class PhishingPatternService {
   @CacheEvict(value = "phishingPatterns", allEntries = true)
   public PhishingPatternDto togglePattern(String patternId) {
     PhishingPattern pattern = patternRepository.findById(new ObjectId(patternId))
-      .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
     pattern.setIsActive(!pattern.getIsActive());
     pattern.setUpdatedAt(new Date());
@@ -195,7 +203,7 @@ public class PhishingPatternService {
   @Transactional
   public void updatePatternAccuracy(String patternId, boolean isFalsePositive) {
     PhishingPattern pattern = patternRepository.findById(new ObjectId(patternId))
-      .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
     if (isFalsePositive) {
       pattern.setFalsePositiveCount(pattern.getFalsePositiveCount() + 1);
@@ -204,7 +212,8 @@ public class PhishingPatternService {
 
     // 정확도가 너무 낮으면 비활성화
     if (pattern.getAccuracy() < 0.5) {
-      log.warn("Pattern {} accuracy too low ({}), deactivating", pattern.getName(), pattern.getAccuracy());
+      log.warn("Pattern {} accuracy too low ({}), deactivating", pattern.getName(),
+          pattern.getAccuracy());
       pattern.setIsActive(false);
     }
 
@@ -218,9 +227,9 @@ public class PhishingPatternService {
   public List<PhishingPatternDto> getHighRiskPatterns() {
     List<PhishingPattern> patterns = patternRepository.findByRiskLevel("high");
     return patterns.stream()
-      .filter(p -> p.getAccuracy() > 0.7)  // 정확도 70% 이상만
-      .map(PhishingPatternDto::from)
-      .collect(Collectors.toList());
+        .filter(p -> p.getAccuracy() > 0.7)  // 정확도 70% 이상만
+        .map(PhishingPatternDto::from)
+        .collect(Collectors.toList());
   }
 
   /**
@@ -235,33 +244,33 @@ public class PhishingPatternService {
 
     // 카테고리별 통계
     Map<String, Long> categoryStats = allPatterns.stream()
-      .collect(Collectors.groupingBy(PhishingPattern::getCategory, Collectors.counting()));
+        .collect(Collectors.groupingBy(PhishingPattern::getCategory, Collectors.counting()));
     stats.put("byCategory", categoryStats);
 
     // 언어별 통계
     Map<String, Long> languageStats = allPatterns.stream()
-      .collect(Collectors.groupingBy(PhishingPattern::getLanguage, Collectors.counting()));
+        .collect(Collectors.groupingBy(PhishingPattern::getLanguage, Collectors.counting()));
     stats.put("byLanguage", languageStats);
 
     // 평균 정확도
     double avgAccuracy = allPatterns.stream()
-      .mapToDouble(PhishingPattern::getAccuracy)
-      .average()
-      .orElse(0.0);
+        .mapToDouble(PhishingPattern::getAccuracy)
+        .average()
+        .orElse(0.0);
     stats.put("averageAccuracy", avgAccuracy);
 
     // 가장 많이 사용된 패턴 Top 5
     List<PhishingPattern> topUsed = patternRepository.findByIsActiveTrueOrderByMatchCountDesc();
     stats.put("topUsedPatterns", topUsed.stream()
-      .limit(5)
-      .map(p -> {
-        Map<String, Object> item = new HashMap<>();
-        item.put("name", p.getName());
-        item.put("matchCount", p.getMatchCount());
-        item.put("accuracy", p.getAccuracy());
-        return item;
-      })
-      .collect(Collectors.toList()));
+        .limit(5)
+        .map(p -> {
+          Map<String, Object> item = new HashMap<>();
+          item.put("name", p.getName());
+          item.put("matchCount", p.getMatchCount());
+          item.put("accuracy", p.getAccuracy());
+          return item;
+        })
+        .collect(Collectors.toList()));
 
     return stats;
   }
@@ -271,7 +280,8 @@ public class PhishingPatternService {
    */
   @Transactional
   @CacheEvict(value = "phishingPatterns", allEntries = true)
-  public List<PhishingPatternDto> importPatterns(List<PhishingPatternDto> patterns, String importedBy) {
+  public List<PhishingPatternDto> importPatterns(List<PhishingPatternDto> patterns,
+      String importedBy) {
     log.info("Importing {} patterns by {}", patterns.size(), importedBy);
 
     List<PhishingPattern> imported = new ArrayList<>();
@@ -296,7 +306,7 @@ public class PhishingPatternService {
         pattern.setWeight(dto.getWeight());
         pattern.setLanguage(dto.getLanguage());
         pattern.setIsActive(true);
-        pattern.setCreatedBy(importedBy);
+        pattern.setCreatedBy(new ObjectId(importedBy));
         pattern.setCreatedAt(new Date());
         pattern.setUpdatedAt(new Date());
         pattern.setMatchCount(0);
@@ -313,8 +323,8 @@ public class PhishingPatternService {
     log.info("Successfully imported {} patterns", saved.size());
 
     return saved.stream()
-      .map(PhishingPatternDto::from)
-      .collect(Collectors.toList());
+        .map(PhishingPatternDto::from)
+        .collect(Collectors.toList());
   }
 
   /**
@@ -336,7 +346,7 @@ public class PhishingPatternService {
           java.util.regex.Pattern.compile(pattern);
         } catch (Exception e) {
           throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-            "Invalid regex pattern: " + pattern);
+              "Invalid regex pattern: " + pattern);
         }
       }
     }
@@ -344,7 +354,7 @@ public class PhishingPatternService {
     // 가중치 범위 검증
     if (dto.getWeight() != null && (dto.getWeight() < 0 || dto.getWeight() > 1)) {
       throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
-        "Weight must be between 0 and 1");
+          "Weight must be between 0 and 1");
     }
   }
 

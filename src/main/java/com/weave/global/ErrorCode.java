@@ -33,7 +33,10 @@ public enum ErrorCode {
   INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "S001", "Internal server error"),
   WORKSPACE_NOT_FOUND(HttpStatus.BAD_REQUEST, "C003", "Workspace not found"),
   SCHEDULE_NOT_FOUND(HttpStatus.BAD_REQUEST, "C004", "Schedule not found"),
-  WORKSPACE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "C005", "Workspace access denied");
+  WORKSPACE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "C005", "Workspace access denied"),
+  DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "C006", "Duplicate resource"),
+  ;
+
 
   private final HttpStatus httpStatus;
   private final String code;

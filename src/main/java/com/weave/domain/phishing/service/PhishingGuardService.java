@@ -12,7 +12,6 @@ import com.weave.domain.user.repository.UserRepository;
 import com.weave.global.BusinessException;
 import com.weave.global.ErrorCode;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,9 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,44 +53,44 @@ public class PhishingGuardService {
 
     // 사용자 조회
     User user = userRepository.findByEmail(userEmail)
-      .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
     // 엔티티 생성
     PhishingReport report = PhishingReport.builder()
-      .smsId(dto.getSmsId())
-      .userId(user.getId())
-      .userEmail(user.getEmail())
-      .sender(dto.getSender())
-      .message(dto.getMessage())
-      .riskScore(dto.getRiskScore())
-      .riskLevel(dto.getRiskLevel())
-      .detectionReasons(dto.getDetectionReasons())
-      .phishingType(dto.getPhishingType())
-      .status("pending")
-      .autoBlocked(dto.getAutoBlocked() != null ? dto.getAutoBlocked() : false)
-      .timestamp(new Date(dto.getTimestamp()))
-      .build();
+        .smsId(dto.getSmsId())
+        .userId(user.getId())
+        .userEmail(user.getEmail())
+        .sender(dto.getSender())
+        .message(dto.getMessage())
+        .riskScore(dto.getRiskScore())
+        .riskLevel(dto.getRiskLevel())
+        .detectionReasons(dto.getDetectionReasons())
+        .phishingType(dto.getPhishingType())
+        .status("pending")
+        .autoBlocked(dto.getAutoBlocked() != null ? dto.getAutoBlocked() : false)
+        .timestamp(new Date(dto.getTimestamp()))
+        .build();
 
     // 위치 정보 설정
     if (dto.getLocation() != null) {
       report.setLocation(PhishingReport.Location.builder()
-        .latitude(dto.getLocation().getLatitude())
-        .longitude(dto.getLocation().getLongitude())
-        .address(dto.getLocation().getAddress())
-        .city(dto.getLocation().getCity())
-        .country(dto.getLocation().getCountry())
-        .build());
+          .latitude(dto.getLocation().getLatitude())
+          .longitude(dto.getLocation().getLongitude())
+          .address(dto.getLocation().getAddress())
+          .city(dto.getLocation().getCity())
+          .country(dto.getLocation().getCountry())
+          .build());
     }
 
     // 디바이스 정보 설정
     if (dto.getDeviceInfo() != null) {
       report.setDeviceInfo(PhishingReport.DeviceInfo.builder()
-        .platform(dto.getDeviceInfo().getPlatform())
-        .version(dto.getDeviceInfo().getVersion())
-        .model(dto.getDeviceInfo().getModel())
-        .manufacturer(dto.getDeviceInfo().getManufacturer())
-        .osVersion(dto.getDeviceInfo().getOsVersion())
-        .build());
+          .platform(dto.getDeviceInfo().getPlatform())
+          .version(dto.getDeviceInfo().getVersion())
+          .model(dto.getDeviceInfo().getModel())
+          .manufacturer(dto.getDeviceInfo().getManufacturer())
+          .osVersion(dto.getDeviceInfo().getOsVersion())
+          .build());
     }
 
     // 워크스페이스 설정
@@ -108,7 +105,9 @@ public class PhishingGuardService {
     updateStatistics(savedReport);
 
     // 알림 처리
-    processNotifications(savedReport, user);
+    String body = "발신자: " + savedReport.getSender() + ", 위험 수준: " + savedReport.getRiskLevel();
+
+    processNotifications(savedReport, body);
 
     // WebSocket으로 실시간 브로드캐스트
     broadcastPhishingAlert(savedReport);
@@ -121,10 +120,10 @@ public class PhishingGuardService {
    */
   public Page<PhishingReportResponseDto> getReports(String userEmail, Pageable pageable) {
     User user = userRepository.findByEmail(userEmail)
-      .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
     Page<PhishingReport> reports = phishingReportRepository
-      .findByUserIdOrderByTimestampDesc(user.getId(), pageable);
+        .findByUserIdOrderByTimestampDesc(user.getId(), pageable);
 
     return reports.map(PhishingReportResponseDto::from);
   }
@@ -132,10 +131,11 @@ public class PhishingGuardService {
   /**
    * 워크스페이스별 피싱 신고 조회
    */
-  public Page<PhishingReportResponseDto> getWorkspaceReports(String workspaceId, Pageable pageable) {
+  public Page<PhishingReportResponseDto> getWorkspaceReports(String workspaceId,
+      Pageable pageable) {
     ObjectId wsId = new ObjectId(workspaceId);
     Page<PhishingReport> reports = phishingReportRepository
-      .findByWorkspaceIdOrderByTimestampDesc(wsId, pageable);
+        .findByWorkspaceIdOrderByTimestampDesc(wsId, pageable);
 
     return reports.map(PhishingReportResponseDto::from);
   }
@@ -145,7 +145,7 @@ public class PhishingGuardService {
    */
   public PhishingReportResponseDto getReport(String reportId) {
     PhishingReport report = phishingReportRepository.findById(new ObjectId(reportId))
-      .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_ERROR));
 
     return PhishingReportResponseDto.from(report);
   }
@@ -154,9 +154,10 @@ public class PhishingGuardService {
    * 피싱 신고 상태 업데이트
    */
   @Transactional
-  public PhishingReportResponseDto updateReportStatus(String reportId, String status, String adminNote) {
+  public PhishingReportResponseDto updateReportStatus(String reportId, String status,
+      String adminNote) {
     PhishingReport report = phishingReportRepository.findById(new ObjectId(reportId))
-      .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_ERROR));
 
     report.setStatus(status);
     if (adminNote != null) {
@@ -175,13 +176,14 @@ public class PhishingGuardService {
    * 사용자 피드백 추가
    */
   @Transactional
-  public PhishingReportResponseDto addUserFeedback(String reportId, String userEmail, String feedback) {
+  public PhishingReportResponseDto addUserFeedback(String reportId, String userEmail,
+      String feedback) {
     PhishingReport report = phishingReportRepository.findById(new ObjectId(reportId))
-      .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.VALIDATION_ERROR));
 
     // 권한 확인
     if (!report.getUserEmail().equals(userEmail)) {
-      throw new BusinessException(ErrorCode.FORBIDDEN);
+      throw new BusinessException(ErrorCode.VALIDATION_ERROR);
     }
 
     report.setUserFeedback(feedback);
@@ -201,7 +203,7 @@ public class PhishingGuardService {
    */
   public PhishingStatisticsDto getStatistics(String userEmail) {
     User user = userRepository.findByEmail(userEmail)
-      .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
     // 오늘 날짜
     LocalDate today = LocalDate.now();
@@ -209,12 +211,12 @@ public class PhishingGuardService {
 
     // 오늘 통계 조회 또는 생성
     PhishingStatistics stats = phishingStatisticsRepository
-      .findByUserIdAndDateAndStatType(user.getId(), todayStr, "daily")
-      .orElseGet(() -> PhishingStatistics.builder()
-        .userId(user.getId())
-        .date(todayStr)
-        .statType("daily")
-        .build());
+        .findByUserIdAndDateAndStatType(user.getId(), todayStr, "daily")
+        .orElseGet(() -> PhishingStatistics.builder()
+            .userId(user.getId())
+            .date(todayStr)
+            .statType("daily")
+            .build());
 
     return PhishingStatisticsDto.from(stats);
   }
@@ -231,12 +233,12 @@ public class PhishingGuardService {
 
     // 워크스페이스 통계 조회
     PhishingStatistics stats = phishingStatisticsRepository
-      .findByWorkspaceIdAndDateAndStatType(wsId, todayStr, "daily")
-      .orElseGet(() -> PhishingStatistics.builder()
-        .workspaceId(wsId)
-        .date(todayStr)
-        .statType("daily")
-        .build());
+        .findByWorkspaceIdAndDateAndStatType(wsId, todayStr, "daily")
+        .orElseGet(() -> PhishingStatistics.builder()
+            .workspaceId(wsId)
+            .date(todayStr)
+            .statType("daily")
+            .build());
 
     return PhishingStatisticsDto.from(stats);
   }
@@ -244,14 +246,15 @@ public class PhishingGuardService {
   /**
    * 근처 피싱 알림 조회
    */
-  public List<PhishingReportResponseDto> getNearbyReports(double latitude, double longitude, double radius) {
+  public List<PhishingReportResponseDto> getNearbyReports(double latitude, double longitude,
+      double radius) {
     // MongoDB 지리 공간 쿼리 사용 (미터 단위)
     List<PhishingReport> nearbyReports = phishingReportRepository
-      .findNearbyReports(longitude, latitude, radius);
+        .findNearbyReports(latitude, longitude, radius);
 
     return nearbyReports.stream()
-      .map(PhishingReportResponseDto::from)
-      .collect(Collectors.toList());
+        .map(PhishingReportResponseDto::from)
+        .collect(Collectors.toList());
   }
 
   /**
@@ -260,8 +263,8 @@ public class PhishingGuardService {
   public List<PhishingReportResponseDto> getHighRiskPendingReports() {
     List<PhishingReport> reports = phishingReportRepository.findHighRiskPendingReports();
     return reports.stream()
-      .map(PhishingReportResponseDto::from)
-      .collect(Collectors.toList());
+        .map(PhishingReportResponseDto::from)
+        .collect(Collectors.toList());
   }
 
   /**
@@ -274,12 +277,12 @@ public class PhishingGuardService {
 
       // 사용자 통계 업데이트
       PhishingStatistics userStats = phishingStatisticsRepository
-        .findByUserIdAndDateAndStatType(report.getUserId(), todayStr, "daily")
-        .orElseGet(() -> PhishingStatistics.builder()
-          .userId(report.getUserId())
-          .date(todayStr)
-          .statType("daily")
-          .build());
+          .findByUserIdAndDateAndStatType(report.getUserId(), todayStr, "daily")
+          .orElseGet(() -> PhishingStatistics.builder()
+              .userId(report.getUserId())
+              .date(todayStr)
+              .statType("daily")
+              .build());
 
       userStats.setPhishingDetected(userStats.getPhishingDetected() + 1);
 
@@ -309,7 +312,7 @@ public class PhishingGuardService {
       userStats.addSender(report.getSender());
 
       // 시간대 통계
-      int hour = LocalDate.now().atStartOfDay().getHour();
+      int hour = java.time.LocalDateTime.now().getHour();
       userStats.addHourlyCount(hour);
 
       userStats.updateRates();
@@ -333,12 +336,12 @@ public class PhishingGuardService {
     String todayStr = today.toString();
 
     PhishingStatistics wsStats = phishingStatisticsRepository
-      .findByWorkspaceIdAndDateAndStatType(report.getWorkspaceId(), todayStr, "daily")
-      .orElseGet(() -> PhishingStatistics.builder()
-        .workspaceId(report.getWorkspaceId())
-        .date(todayStr)
-        .statType("daily")
-        .build());
+        .findByWorkspaceIdAndDateAndStatType(report.getWorkspaceId(), todayStr, "daily")
+        .orElseGet(() -> PhishingStatistics.builder()
+            .workspaceId(report.getWorkspaceId())
+            .date(todayStr)
+            .statType("daily")
+            .build());
 
     wsStats.setPhishingDetected(wsStats.getPhishingDetected() + 1);
 
@@ -369,8 +372,8 @@ public class PhishingGuardService {
 
       // 사용자 통계에서 오탐지 수 증가
       PhishingStatistics userStats = phishingStatisticsRepository
-        .findByUserIdAndDateAndStatType(report.getUserId(), todayStr, "daily")
-        .orElse(null);
+          .findByUserIdAndDateAndStatType(report.getUserId(), todayStr, "daily")
+          .orElse(null);
 
       if (userStats != null) {
         userStats.setFalsePositiveCount(userStats.getFalsePositiveCount() + 1);
@@ -389,16 +392,17 @@ public class PhishingGuardService {
   /**
    * 알림 처리
    */
-  private void processNotifications(PhishingReport report, User user) {
+  private void processNotifications(PhishingReport report, String body) {
     try {
       // 고위험 알림
       if ("high".equals(report.getRiskLevel())) {
-        notificationService.sendHighRiskAlert(report, user);
+        notificationService.sendHighRiskAlert(report);
       }
 
       // 워크스페이스 멤버에게 알림
       if (report.getWorkspaceId() != null) {
-        notificationService.notifyWorkspaceMembers(report);
+        notificationService.notifyWorkspaceMembers(report.getWorkspaceId(), "새로운 피싱 신고 접수", body,
+            report);
       }
 
     } catch (Exception e) {
@@ -419,16 +423,16 @@ public class PhishingGuardService {
       // 워크스페이스별 알림
       if (report.getWorkspaceId() != null) {
         messagingTemplate.convertAndSend(
-          "/topic/phishing.alerts." + report.getWorkspaceId(),
-          dto
+            "/topic/phishing.alerts." + report.getWorkspaceId(),
+            dto
         );
       }
 
       // 개인 알림
       messagingTemplate.convertAndSendToUser(
-        report.getUserEmail(),
-        "/queue/phishing.personal",
-        dto
+          report.getUserEmail(),
+          "/queue/phishing.personal",
+          dto
       );
 
       log.info("피싱 알림 브로드캐스트 완료 - SMS ID: {}", report.getSmsId());

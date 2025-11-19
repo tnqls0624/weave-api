@@ -18,8 +18,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 /**
- * 피싱 통계 엔티티
- * 사용자/워크스페이스별 피싱 통계 정보
+ * 피싱 통계 엔티티 사용자/워크스페이스별 피싱 통계 정보
  */
 @Document(collection = "phishing_statistics")
 @CompoundIndexes({
@@ -170,8 +169,8 @@ public class PhishingStatistics {
 
     // 정확도 계산
     if (phishingDetected > 0 && falsePositiveCount >= 0) {
-      this.accuracyRate = (phishingDetected - falsePositiveCount).doubleValue() /
-        phishingDetected.doubleValue();
+      this.accuracyRate = (phishingDetected - falsePositiveCount) /
+          phishingDetected.doubleValue();
     }
   }
 
@@ -191,9 +190,9 @@ public class PhishingStatistics {
     // 상위 10개만 유지
     if (topSenders.size() > 10) {
       String minSender = topSenders.entrySet().stream()
-        .min(Map.Entry.comparingByValue())
-        .map(Map.Entry::getKey)
-        .orElse(null);
+          .min(Map.Entry.comparingByValue())
+          .map(Map.Entry::getKey)
+          .orElse(null);
       if (minSender != null) {
         topSenders.remove(minSender);
       }

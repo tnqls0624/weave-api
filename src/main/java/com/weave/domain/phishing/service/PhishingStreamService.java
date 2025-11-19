@@ -9,7 +9,14 @@ import com.weave.domain.phishing.repository.PhishingReportRepository;
 import com.weave.domain.phishing.repository.PhishingStatisticsRepository;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -88,35 +95,35 @@ public class PhishingStreamService {
       if (workspaceId != null && !workspaceId.equals("null")) {
         // 워크스페이스 통계
         Optional<PhishingStatistics> wsStats = statisticsRepository
-          .findByWorkspaceIdAndDateAndStatType(
-            new ObjectId(workspaceId),
-            LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
-            "daily"
-          );
+            .findByWorkspaceIdAndDateAndStatType(
+                new ObjectId(workspaceId),
+                LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
+                "daily"
+            );
 
         stats = PhishingStatisticsDto.from(wsStats.orElse(null));
 
         messagingTemplate.convertAndSend(
-          "/topic/phishing.stats." + workspaceId,
-          stats
+            "/topic/phishing.stats." + workspaceId,
+            stats
         );
       }
 
       if (userId != null && !userId.equals("null")) {
         // 사용자 통계
         Optional<PhishingStatistics> userStats = statisticsRepository
-          .findByUserIdAndDateAndStatType(
-            new ObjectId(userId),
-            LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
-            "daily"
-          );
+            .findByUserIdAndDateAndStatType(
+                new ObjectId(userId),
+                LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE),
+                "daily"
+            );
 
         stats = PhishingStatisticsDto.from(userStats.orElse(null));
 
         messagingTemplate.convertAndSendToUser(
-          userId,
-          "/queue/phishing.stats",
-          stats
+            userId,
+            "/queue/phishing.stats",
+            stats
         );
       }
     } catch (Exception e) {
@@ -130,13 +137,13 @@ public class PhishingStreamService {
   public List<PhishingReportResponseDto> getRecentAlerts(String userId, int limit) {
     try {
       List<PhishingReport> reports = reportRepository.findByUserId(
-        new ObjectId(userId),
-        PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "timestamp"))
+          new ObjectId(userId),
+          PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "timestamp"))
       );
 
       return reports.stream()
-        .map(PhishingReportResponseDto::from)
-        .toList();
+          .map(PhishingReportResponseDto::from)
+          .toList();
     } catch (Exception e) {
       log.error("Failed to get recent alerts for user: {}", userId, e);
       return new ArrayList<>();
@@ -154,9 +161,9 @@ public class PhishingStreamService {
     try {
       // 근처 피싱 신고 조회 (5km 반경)
       List<PhishingReport> nearbyReports = reportRepository.findNearbyReports(
-        alert.getLocation().getLatitude(),
-        alert.getLocation().getLongitude(),
-        5000
+          alert.getLocation().getLatitude(),
+          alert.getLocation().getLongitude(),
+          5000
       );
 
       // 고유한 사용자 ID 추출
@@ -170,9 +177,9 @@ public class PhishingStreamService {
       // 각 사용자에게 알림 전송
       for (String userId : nearbyUserIds) {
         messagingTemplate.convertAndSendToUser(
-          userId,
-          "/queue/phishing.nearby",
-          alert
+            userId,
+            "/queue/phishing.nearby",
+            alert
         );
       }
 
@@ -215,12 +222,12 @@ public class PhishingStreamService {
       // 최근 24시간 통계 조회
       LocalDate today = LocalDate.now();
       List<PhishingStatistics> hourlyStats = statisticsRepository
-        .findWorkspaceStatsByDateRange(
-          new ObjectId(workspaceId),
-          today.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE),
-          today.format(DateTimeFormatter.ISO_LOCAL_DATE),
-          "hourly"
-        );
+          .findWorkspaceStatsByDateRange(
+              new ObjectId(workspaceId),
+              today.minusDays(1).format(DateTimeFormatter.ISO_LOCAL_DATE),
+              today.format(DateTimeFormatter.ISO_LOCAL_DATE),
+              "hourly"
+          );
 
       // 대시보드 데이터 구성
       Map<String, Object> dashboardData = new HashMap<>();
@@ -229,20 +236,20 @@ public class PhishingStreamService {
 
       // 최근 고위험 알림
       List<PhishingReport> highRiskReports = reportRepository
-        .findByWorkspaceIdAndRiskLevel(
-          new ObjectId(workspaceId),
-          "high",
-          PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "timestamp"))
-        );
+          .findByWorkspaceIdAndRiskLevel(
+              new ObjectId(workspaceId),
+              "high",
+              PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "timestamp"))
+          );
 
       dashboardData.put("recentHighRisk", highRiskReports.stream()
-        .map(PhishingReportResponseDto::from)
-        .toList());
+          .map(PhishingReportResponseDto::from)
+          .toList());
 
       // 브로드캐스트
       messagingTemplate.convertAndSend(
-        "/topic/phishing.dashboard." + workspaceId,
-        dashboardData
+          "/topic/phishing.dashboard." + workspaceId,
+          dashboardData
       );
 
     } catch (Exception e) {
@@ -260,25 +267,27 @@ public class PhishingStreamService {
       LocalDate startDate = endDate.minusDays(7);
 
       List<PhishingReport> reports = reportRepository.findByWorkspaceIdAndDateRange(
-        new ObjectId(workspaceId),
-        Date.from(startDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC)),
-        Date.from(endDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC))
+          new ObjectId(workspaceId),
+          Date.from(startDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC)),
+          Date.from(endDate.atStartOfDay().toInstant(java.time.ZoneOffset.UTC))
       );
 
       // 위치별 집계
       Map<String, Integer> heatmapData = new HashMap<>();
       for (PhishingReport report : reports) {
-        if (report.getLocation() != null && report.getLocation().getCoordinates() != null) {
+        if (report.getLocation() != null
+            && report.getLocation().getLatitude() != null
+            && report.getLocation().getLongitude() != null) {
           String key = String.format("%.4f,%.4f",
-            report.getLocation().getCoordinates().get(1),
-            report.getLocation().getCoordinates().get(0));
+              report.getLocation().getLatitude(),
+              report.getLocation().getLongitude());
           heatmapData.merge(key, 1, Integer::sum);
         }
       }
 
       messagingTemplate.convertAndSend(
-        "/topic/phishing.heatmap." + workspaceId,
-        heatmapData
+          "/topic/phishing.heatmap." + workspaceId,
+          heatmapData
       );
 
     } catch (Exception e) {
@@ -314,8 +323,8 @@ public class PhishingStreamService {
    */
   private String generateStreamKey(String workspaceId, String userId) {
     return String.format("%s:%s",
-      workspaceId != null ? workspaceId : "null",
-      userId != null ? userId : "null"
+        workspaceId != null ? workspaceId : "null",
+        userId != null ? userId : "null"
     );
   }
 
@@ -323,6 +332,7 @@ public class PhishingStreamService {
    * 스트림 정보 클래스
    */
   private static class StreamInfo {
+
     private final String workspaceId;
     private final String userId;
     private final ScheduledFuture<?> future;
