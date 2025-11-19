@@ -93,14 +93,20 @@ public class PhishingPattern {
    */
   @Field("match_count")
   @Builder.Default
-  private Long matchCount = 0L;
+  private Integer matchCount = 0;
+
+  /**
+   * 리스크 레벨
+   */
+  @Field("risk_level")
+  private String riskLevel;
 
   /**
    * 오탐지 횟수 (통계용)
    */
   @Field("false_positive_count")
   @Builder.Default
-  private Long falsePositiveCount = 0L;
+  private Integer falsePositiveCount = 0;
 
   /**
    * 정확도 (match_count / (match_count + false_positive_count))
