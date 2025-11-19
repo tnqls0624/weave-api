@@ -124,8 +124,8 @@ public class PhishingPatternDto {
     pattern.setFalsePositiveCount(this.falsePositiveCount != null ? this.falsePositiveCount : 0);
     pattern.setAccuracy(this.accuracy != null ? this.accuracy : 1.0);
     pattern.setLastUsedAt(this.lastUsedAt);
-    pattern.setCreatedBy(this.createdBy);
-    pattern.setUpdatedBy(this.updatedBy);
+    pattern.setCreatedBy(new ObjectId(this.createdBy));
+    pattern.setUpdatedBy(new ObjectId(this.updatedBy));
     pattern.setCreatedAt(this.createdAt != null ? this.createdAt : new Date());
     pattern.setUpdatedAt(this.updatedAt != null ? this.updatedAt : new Date());
 
