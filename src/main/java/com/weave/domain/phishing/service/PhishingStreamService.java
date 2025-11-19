@@ -92,7 +92,7 @@ public class PhishingStreamService {
     try {
       PhishingStatisticsDto stats;
 
-      if (workspaceId != null && !workspaceId.equals("null")) {
+      if (isValidObjectId(workspaceId)) {
         // 워크스페이스 통계
         Optional<PhishingStatistics> wsStats = statisticsRepository
             .findByWorkspaceIdAndDateAndStatType(
@@ -109,7 +109,7 @@ public class PhishingStreamService {
         );
       }
 
-      if (userId != null && !userId.equals("null")) {
+      if (isValidObjectId(userId)) {
         // 사용자 통계
         Optional<PhishingStatistics> userStats = statisticsRepository
             .findByUserIdAndDateAndStatType(
@@ -136,6 +136,11 @@ public class PhishingStreamService {
    */
   public List<PhishingReportResponseDto> getRecentAlerts(String userId, int limit) {
     try {
+      if (!isValidObjectId(userId)) {
+        log.warn("Invalid userId for recent alerts: {}", userId);
+        return new ArrayList<>();
+      }
+
       List<PhishingReport> reports = reportRepository.findByUserId(
           new ObjectId(userId),
           PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "timestamp"))
@@ -219,6 +224,11 @@ public class PhishingStreamService {
    */
   private void sendDashboardUpdate(String workspaceId) {
     try {
+      if (!isValidObjectId(workspaceId)) {
+        log.warn("Invalid workspaceId for dashboard update: {}", workspaceId);
+        return;
+      }
+
       // 최근 24시간 통계 조회
       LocalDate today = LocalDate.now();
       List<PhishingStatistics> hourlyStats = statisticsRepository
@@ -262,6 +272,11 @@ public class PhishingStreamService {
    */
   public void streamHeatmapData(String workspaceId) {
     try {
+      if (!isValidObjectId(workspaceId)) {
+        log.warn("Invalid workspaceId for heatmap data: {}", workspaceId);
+        return;
+      }
+
       // 최근 7일간의 위치 기반 피싱 데이터
       LocalDate endDate = LocalDate.now();
       LocalDate startDate = endDate.minusDays(7);
@@ -326,6 +341,29 @@ public class PhishingStreamService {
         workspaceId != null ? workspaceId : "null",
         userId != null ? userId : "null"
     );
+  }
+
+  /**
+   * ObjectId 유효성 검사
+   */
+  private boolean isValidObjectId(String id) {
+    if (id == null || id.isEmpty() || id.equals("null")) {
+      return false;
+    }
+
+    // ObjectId는 24자리 16진수 문자열이어야 함
+    if (id.length() != 24) {
+      return false;
+    }
+
+    // 16진수 문자인지 확인
+    for (char c : id.toCharArray()) {
+      if (!((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**
