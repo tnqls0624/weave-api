@@ -25,15 +25,15 @@ public class UserService {
   public UserResponseDto updateNotification(UpdateNotificationRequestDto dto, String email) {
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
-    if (dto.isPushEnabled()) {
-      user.setPushEnabled(true);
-    }
+
+    user.setPushEnabled(dto.isPushEnabled());
+
     if (dto.getFcmToken() != null) {
       user.setFcmToken(dto.getFcmToken());
     }
-    if (dto.isLocationEnabled()) {
-      user.setLocationEnabled(true);
-    }
+
+    user.setLocationEnabled(dto.isLocationEnabled());
+
     userRepository.save(user);
     return UserResponseDto.from(user);
   }
