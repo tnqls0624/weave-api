@@ -7,6 +7,8 @@ import com.weave.domain.phishing.entity.PhishingReport;
 import com.weave.domain.phishing.entity.PhishingStatistics;
 import com.weave.domain.phishing.repository.PhishingReportRepository;
 import com.weave.domain.phishing.repository.PhishingStatisticsRepository;
+import com.weave.domain.user.entity.User;
+import com.weave.domain.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -41,6 +43,7 @@ public class PhishingStreamService {
   private final PhishingReportRepository reportRepository;
   private final PhishingStatisticsRepository statisticsRepository;
   private final SimpMessagingTemplate messagingTemplate;
+  private final UserRepository userRepository;
 
   // 활성 스트림 관리
   private final Map<String, StreamInfo> activeStreams = new ConcurrentHashMap<>();
@@ -134,15 +137,15 @@ public class PhishingStreamService {
   /**
    * 최근 알림 조회
    */
-  public List<PhishingReportResponseDto> getRecentAlerts(String userId, int limit) {
+  public List<PhishingReportResponseDto> getRecentAlerts(String email, int limit) {
     try {
-      if (!isValidObjectId(userId)) {
-        log.warn("Invalid userId for recent alerts: {}", userId);
+      Optional<User> user = this.userRepository.findByEmail(email);
+      if (user.isEmpty()) {
+        log.warn("User not found for email: {}", email);
         return new ArrayList<>();
       }
-
       List<PhishingReport> reports = reportRepository.findByUserId(
-          new ObjectId(userId),
+          user.get().getId(),
           PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "timestamp"))
       );
 
@@ -150,7 +153,7 @@ public class PhishingStreamService {
           .map(PhishingReportResponseDto::from)
           .toList();
     } catch (Exception e) {
-      log.error("Failed to get recent alerts for user: {}", userId, e);
+      log.error("Failed to get recent alerts for user:", e);
       return new ArrayList<>();
     }
   }
