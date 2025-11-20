@@ -86,6 +86,12 @@ dependencies {
     // AWS SDK v2 for S3
     implementation(platform("software.amazon.awssdk:bom:2.27.21"))
     implementation("software.amazon.awssdk:s3")
+
+    // Deep Java Library (DJL) for TensorFlow - ML Framework
+    implementation platform('ai.djl:bom:0.30.0')
+    implementation 'ai.djl.tensorflow:tensorflow-engine'
+    implementation 'ai.djl.tensorflow:tensorflow-model-zoo'
+    runtimeOnly 'ai.djl.tensorflow:tensorflow-native-auto'
 }
 
 tasks.named('test') {

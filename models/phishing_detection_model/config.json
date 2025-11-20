@@ -1,0 +1,6 @@
+{
+  "max_words": 10000,
+  "max_sequence_length": 200,
+  "embedding_dim": 128,
+  "vocab_size": 256
+}

@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 public class PhishingDetectionService {
 
   private final PhishingPatternRepository patternRepository;
+  private final PhishingMLService mlService;
 
   /**
    * 피싱 탐지 수행
@@ -52,15 +53,30 @@ public class PhishingDetectionService {
     }
 
     // 2. 휴리스틱 분석
-    totalScore += analyzeHeuristics(sender, message, detectionReasons);
+    double heuristicScore = analyzeHeuristics(sender, message, detectionReasons);
+    totalScore += heuristicScore;
 
     // 3. URL 분석
     totalScore += analyzeUrls(message, detectionReasons);
 
-    // 4. 민감도 조정
+    // 4. ML 모델 분석 (사용 가능한 경우)
+    double mlScore = 0.0;
+    if (mlService.isModelAvailable()) {
+      mlScore = mlService.predict(message);
+      log.debug("ML 모델 점수: {}", mlScore);
+
+      // ML 점수와 휴리스틱 점수 결합 (ML 60%, 휴리스틱 40%)
+      totalScore = (mlScore * 0.6) + (totalScore * 0.4);
+
+      if (mlScore > 0.7) {
+        detectionReasons.add("AI 모델 피싱 판정");
+      }
+    }
+
+    // 5. 민감도 조정
     totalScore = adjustBySensitivity(totalScore, sensitivityLevel);
 
-    // 5. 결과 설정
+    // 6. 결과 설정
     result.setRiskScore(Math.min(totalScore, 1.0));
     result.setRiskLevel(calculateRiskLevel(totalScore));
     result.setPhishing(isPhishing(totalScore, sensitivityLevel));

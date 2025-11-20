@@ -57,3 +57,13 @@ Desktop.ini
 
 ### JWT Keys (로컬 개발용) ###
 keys/
+
+### ML Training (학습 관련 임시 파일 제외) ###
+ml_training/venv/
+ml_training/__pycache__/
+ml_training/*.png
+ml_training/*.csv
+ml_training/*.h5
+
+# 하지만 최종 학습된 모델은 Git에 포함
+!models/phishing_detection_model/**
