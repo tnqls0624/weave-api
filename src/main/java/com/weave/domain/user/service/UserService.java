@@ -58,6 +58,9 @@ public class UserService {
     if (dto.getLocationEnabled() != null) {
       user.setLocationEnabled(dto.getLocationEnabled());
     }
+    if (dto.getPhishingGuardEnabled() != null) {
+      user.setPhishingGuardEnabled(dto.getPhishingGuardEnabled());
+    }
 
     userRepository.save(user);
 

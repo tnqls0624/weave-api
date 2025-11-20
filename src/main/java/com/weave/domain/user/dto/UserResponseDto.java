@@ -41,6 +41,9 @@ public class UserResponseDto {
   @Schema(description = "위치 사용 여부", example = "true")
   private boolean locationEnabled;
 
+  @Schema(description = "피싱 가드 활성화 여부", example = "false")
+  private boolean phishingGuardEnabled;
+
   @Schema(description = "유저 프로필 이미지", example = "https://example.com/avatar.jpg")
   private String avatarUrl;
 
@@ -61,6 +64,7 @@ public class UserResponseDto {
         .fcmToken(user.getFcmToken())
         .pushEnabled(user.getPushEnabled())
         .locationEnabled(user.getLocationEnabled())
+        .phishingGuardEnabled(user.getPhishingGuardEnabled() != null ? user.getPhishingGuardEnabled() : false)
         .avatarUrl(user.getAvatarUrl())
         .createdAt(user.getCreatedAt())
         .updatedAt(user.getUpdatedAt())

@@ -59,6 +59,10 @@ public class User {
   @Builder.Default
   private Boolean locationEnabled = false;
 
+  @Field("phishing_guard_enabled")
+  @Builder.Default
+  private Boolean phishingGuardEnabled = false;
+
   @Field("thumbnail_image")
   private String avatarUrl;
 
