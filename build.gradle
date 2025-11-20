@@ -91,7 +91,6 @@ dependencies {
     implementation platform('ai.djl:bom:0.30.0')
     implementation 'ai.djl.tensorflow:tensorflow-engine'
     implementation 'ai.djl.tensorflow:tensorflow-model-zoo'
-    runtimeOnly 'ai.djl.tensorflow:tensorflow-native-auto'
 }
 
 tasks.named('test') {
