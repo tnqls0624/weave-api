@@ -61,6 +61,12 @@ public class UserService {
     if (dto.getPhishingGuardEnabled() != null) {
       user.setPhishingGuardEnabled(dto.getPhishingGuardEnabled());
     }
+    if (dto.getPhishingAutoBlock() != null) {
+      user.setPhishingAutoBlock(dto.getPhishingAutoBlock());
+    }
+    if (dto.getPhishingSensitivityLevel() != null) {
+      user.setPhishingSensitivityLevel(dto.getPhishingSensitivityLevel());
+    }
 
     userRepository.save(user);
 

@@ -44,6 +44,12 @@ public class UserResponseDto {
   @Schema(description = "피싱 가드 활성화 여부", example = "false")
   private boolean phishingGuardEnabled;
 
+  @Schema(description = "피싱 자동 차단 여부", example = "false")
+  private boolean phishingAutoBlock;
+
+  @Schema(description = "피싱 검사 민감도", example = "medium")
+  private String phishingSensitivityLevel;
+
   @Schema(description = "유저 프로필 이미지", example = "https://example.com/avatar.jpg")
   private String avatarUrl;
 
@@ -65,6 +71,8 @@ public class UserResponseDto {
         .pushEnabled(user.getPushEnabled())
         .locationEnabled(user.getLocationEnabled())
         .phishingGuardEnabled(user.getPhishingGuardEnabled() != null ? user.getPhishingGuardEnabled() : false)
+        .phishingAutoBlock(user.getPhishingAutoBlock() != null ? user.getPhishingAutoBlock() : false)
+        .phishingSensitivityLevel(user.getPhishingSensitivityLevel() != null ? user.getPhishingSensitivityLevel() : "medium")
         .avatarUrl(user.getAvatarUrl())
         .createdAt(user.getCreatedAt())
         .updatedAt(user.getUpdatedAt())
