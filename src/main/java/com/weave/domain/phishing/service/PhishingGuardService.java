@@ -212,11 +212,25 @@ public class PhishingGuardService {
     // 오늘 통계 조회 또는 생성
     PhishingStatistics stats = phishingStatisticsRepository
         .findByUserIdAndDateAndStatType(user.getId(), todayStr, "daily")
-        .orElseGet(() -> PhishingStatistics.builder()
-            .userId(user.getId())
-            .date(todayStr)
-            .statType("daily")
-            .build());
+        .orElseGet(() -> {
+          PhishingStatistics newStats = PhishingStatistics.builder()
+              .userId(user.getId())
+              .date(todayStr)
+              .statType("daily")
+              .totalScanned(0L)
+              .phishingDetected(0L)
+              .highRiskCount(0L)
+              .mediumRiskCount(0L)
+              .lowRiskCount(0L)
+              .autoBlockedCount(0L)
+              .falsePositiveCount(0L)
+              .avgRiskScore(0.0)
+              .detectionRate(0.0)
+              .accuracyRate(0.0)
+              .build();
+          // DB에 저장하여 createdAt, updatedAt 자동 생성
+          return phishingStatisticsRepository.save(newStats);
+        });
 
     return PhishingStatisticsDto.from(stats);
   }
@@ -234,11 +248,25 @@ public class PhishingGuardService {
     // 워크스페이스 통계 조회
     PhishingStatistics stats = phishingStatisticsRepository
         .findByWorkspaceIdAndDateAndStatType(wsId, todayStr, "daily")
-        .orElseGet(() -> PhishingStatistics.builder()
-            .workspaceId(wsId)
-            .date(todayStr)
-            .statType("daily")
-            .build());
+        .orElseGet(() -> {
+          PhishingStatistics newStats = PhishingStatistics.builder()
+              .workspaceId(wsId)
+              .date(todayStr)
+              .statType("daily")
+              .totalScanned(0L)
+              .phishingDetected(0L)
+              .highRiskCount(0L)
+              .mediumRiskCount(0L)
+              .lowRiskCount(0L)
+              .autoBlockedCount(0L)
+              .falsePositiveCount(0L)
+              .avgRiskScore(0.0)
+              .detectionRate(0.0)
+              .accuracyRate(0.0)
+              .build();
+          // DB에 저장하여 createdAt, updatedAt 자동 생성
+          return phishingStatisticsRepository.save(newStats);
+        });
 
     return PhishingStatisticsDto.from(stats);
   }
