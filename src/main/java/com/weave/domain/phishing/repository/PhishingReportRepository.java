@@ -66,12 +66,16 @@ public interface PhishingReportRepository extends MongoRepository<PhishingReport
   List<PhishingReport> findByWorkspaceAndTimestamp(ObjectId workspaceId, Date start, Date end);
 
   /**
-   * 위치 기반 조회 (근처 피싱 알림) 주의: GeoJSON이 아닌 일반 좌표 사용을 위한 범위 쿼리 실제 거리는 대략적인 위경도 차이로 계산 (1도 ≈ 111km)
+   * 위치 기반 조회 (근처 피싱 알림)
+   * @param minLat 최소 위도
+   * @param maxLat 최대 위도
+   * @param minLon 최소 경도
+   * @param maxLon 최대 경도
    */
   @Query("{ 'location': { $exists: true, $ne: null }, " +
-      "'location.latitude': { $gte: ?0 - (?2 / 111000), $lte: ?0 + (?2 / 111000) }, " +
-      "'location.longitude': { $gte: ?1 - (?2 / 111000), $lte: ?1 + (?2 / 111000) } }")
-  List<PhishingReport> findNearbyReports(double latitude, double longitude, double maxDistance);
+      "'location.latitude': { $gte: ?0, $lte: ?1 }, " +
+      "'location.longitude': { $gte: ?2, $lte: ?3 } }")
+  List<PhishingReport> findNearbyReports(double minLat, double maxLat, double minLon, double maxLon);
 
   /**
    * 고위험 미처리 건 조회

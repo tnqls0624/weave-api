@@ -168,10 +168,21 @@ public class PhishingStreamService {
 
     try {
       // 근처 피싱 신고 조회 (5km 반경)
+      double latitude = alert.getLocation().getLatitude();
+      double longitude = alert.getLocation().getLongitude();
+      double radius = 5000; // meters
+
+      // 위도/경도 범위 계산 (1도 ≈ 111km)
+      double latDelta = radius / 111000.0;
+      double lonDelta = radius / 111000.0;
+
+      double minLat = latitude - latDelta;
+      double maxLat = latitude + latDelta;
+      double minLon = longitude - lonDelta;
+      double maxLon = longitude + lonDelta;
+
       List<PhishingReport> nearbyReports = reportRepository.findNearbyReports(
-          alert.getLocation().getLatitude(),
-          alert.getLocation().getLongitude(),
-          5000
+          minLat, maxLat, minLon, maxLon
       );
 
       // 고유한 사용자 ID 추출

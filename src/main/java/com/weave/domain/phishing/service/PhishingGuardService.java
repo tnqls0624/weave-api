@@ -276,9 +276,18 @@ public class PhishingGuardService {
    */
   public List<PhishingReportResponseDto> getNearbyReports(double latitude, double longitude,
       double radius) {
-    // MongoDB 지리 공간 쿼리 사용 (미터 단위)
+    // 위도/경도 범위 계산 (1도 ≈ 111km)
+    double latDelta = radius / 111000.0; // 미터를 도(degree)로 변환
+    double lonDelta = radius / 111000.0;
+
+    double minLat = latitude - latDelta;
+    double maxLat = latitude + latDelta;
+    double minLon = longitude - lonDelta;
+    double maxLon = longitude + lonDelta;
+
+    // MongoDB 지리 공간 쿼리 사용
     List<PhishingReport> nearbyReports = phishingReportRepository
-        .findNearbyReports(latitude, longitude, radius);
+        .findNearbyReports(minLat, maxLat, minLon, maxLon);
 
     return nearbyReports.stream()
         .map(PhishingReportResponseDto::from)
