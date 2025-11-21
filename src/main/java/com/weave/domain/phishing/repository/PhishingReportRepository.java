@@ -68,7 +68,8 @@ public interface PhishingReportRepository extends MongoRepository<PhishingReport
   /**
    * 위치 기반 조회 (근처 피싱 알림) 주의: GeoJSON이 아닌 일반 좌표 사용을 위한 범위 쿼리 실제 거리는 대략적인 위경도 차이로 계산 (1도 ≈ 111km)
    */
-  @Query("{ 'location.latitude': { $gte: ?0 - (?2 / 111000), $lte: ?0 + (?2 / 111000) }, " +
+  @Query("{ 'location': { $exists: true, $ne: null }, " +
+      "'location.latitude': { $gte: ?0 - (?2 / 111000), $lte: ?0 + (?2 / 111000) }, " +
       "'location.longitude': { $gte: ?1 - (?2 / 111000), $lte: ?1 + (?2 / 111000) } }")
   List<PhishingReport> findNearbyReports(double latitude, double longitude, double maxDistance);
 
