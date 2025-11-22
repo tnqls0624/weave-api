@@ -143,6 +143,10 @@ spring:
   data:
     mongodb:
       uri: mongodb://root:1234@localhost:27017/lovechedule?authSource=admin
+phishing:
+  ml:
+    inference:
+      enabled: true  # Python ML 추론 서버 활성화
 logging:
   file:
     path: ./logs/weave-api

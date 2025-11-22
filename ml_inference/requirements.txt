@@ -6,8 +6,8 @@ uvicorn[standard]==0.27.0
 pydantic==2.5.3
 
 # ML/AI
-tensorflow==2.15.0
-numpy==1.26.2
+tensorflow>=2.16.0
+numpy>=1.26.0
 
 # 유틸리티
 python-multipart==0.0.6
