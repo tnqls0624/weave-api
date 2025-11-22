@@ -82,12 +82,9 @@ aws:
     upload-prefix: ${AWS_S3_UPLOAD_PREFIX:${AWS_S3_UPLOAD_PATH:uploads/}}
 
 # =========================
-# 피싱 탐지 ML 모델 설정
+# 피싱 탐지 ML 추론 서버 설정
 # =========================
 phishing:
-  model:
-    enabled: false  # ML 모델 활성화 여부 (모델 파일이 있을 때 true로 변경)
-    path: ${PHISHING_MODEL_PATH:models/phishing_detection_model}  # 모델 파일 경로
   ml:
     inference:
       url: ${PHISHING_ML_INFERENCE_URL:http://localhost:8000}  # Python 추론 서버 URL
