@@ -128,10 +128,10 @@ def pad_sequence(sequence: List[int], max_length: int) -> np.ndarray:
     """시퀀스를 고정 길이로 패딩"""
     if len(sequence) > max_length:
         # 잘라내기
-        return np.array(sequence[:max_length])
+        return np.array(sequence[:max_length], dtype=np.float32)
     else:
         # 패딩
-        padded = np.zeros(max_length, dtype=np.int32)
+        padded = np.zeros(max_length, dtype=np.float32)
         padded[:len(sequence)] = sequence
         return padded
 
@@ -262,8 +262,8 @@ async def predict(request: PredictionRequest):
         # 모델 시그니처 확인 및 호출
         infer = model.signatures["serving_default"]
 
-        # 입력 텐서 생성
-        input_tensor = tf.constant(input_data, dtype=tf.int32)
+        # 입력 텐서 생성 (모델이 float32 입력을 기대함)
+        input_tensor = tf.constant(input_data, dtype=tf.float32)
 
         # 추론 실행
         predictions = infer(input_tensor)
