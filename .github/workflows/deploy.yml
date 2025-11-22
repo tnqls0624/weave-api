@@ -39,6 +39,18 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Create ECR repositories if not exist
+        run: |
+          # ML Trainer 리포지토리 생성 (없으면)
+          aws ecr describe-repositories --repository-names weave-ml-trainer --region $AWS_REGION 2>/dev/null || \
+            aws ecr create-repository --repository-name weave-ml-trainer --region $AWS_REGION
+
+          # ML Inference 리포지토리 생성 (없으면)
+          aws ecr describe-repositories --repository-names weave-ml-inference --region $AWS_REGION 2>/dev/null || \
+            aws ecr create-repository --repository-name weave-ml-inference --region $AWS_REGION
+
+          echo "ECR 리포지토리 확인 완료"
+
       - name: Build and push Java API Docker image
         id: build-image
         run: |
