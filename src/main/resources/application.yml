@@ -88,6 +88,11 @@ phishing:
   model:
     enabled: false  # ML 모델 활성화 여부 (모델 파일이 있을 때 true로 변경)
     path: ${PHISHING_MODEL_PATH:models/phishing_detection_model}  # 모델 파일 경로
+  ml:
+    inference:
+      url: ${PHISHING_ML_INFERENCE_URL:http://localhost:8000}  # Python 추론 서버 URL
+      enabled: ${PHISHING_ML_INFERENCE_ENABLED:false}  # Python 추론 서버 활성화 여부
+      timeout: ${PHISHING_ML_INFERENCE_TIMEOUT:5000}  # 타임아웃 (밀리초)
 
 
 # =========================

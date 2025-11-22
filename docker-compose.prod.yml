@@ -96,6 +96,100 @@ services:
       retries: 3
       start_period: 20s
 
+  ml-trainer:
+    image: ${ML_TRAINER_IMAGE}
+    environment:
+      # MongoDB 연결
+      - MONGO_URI=${MONGODB_URI:-mongodb://root:1234@mongodb:27017/lovechedule?authSource=admin}
+
+      # 재학습 설정
+      - RETRAIN_DAYS=${ML_RETRAIN_DAYS:-30}
+      - AUTO_DEPLOY=${ML_AUTO_DEPLOY:-true}
+
+      # 실행 모드: cron (자동), once (일회성)
+      - RUN_MODE=${ML_RUN_MODE:-cron}
+
+      # Cron 스케줄 (기본: 매주 일요일 새벽 2시)
+      - CRON_SCHEDULE=${ML_CRON_SCHEDULE:-0 2 * * 0}
+
+      # Timezone
+      - TZ=Asia/Seoul
+    volumes:
+      # 모델 파일 공유 (API 서버와 공유)
+      - ml_models:/app/../models/phishing_detection_model
+
+      # 학습 데이터 및 로그 영구 보존
+      - ml_training_data:/app/training_data
+      - ml_logs:/app/logs
+      - ml_backups:/app/backups
+    networks:
+      - weave-network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 3
+        window: 300s
+    depends_on:
+      - mongodb
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  ml-inference:
+    image: ${ML_INFERENCE_IMAGE}
+    environment:
+      - MODEL_PATH=/app/models/phishing_detection_model
+      - PORT=8000
+      - HOST=0.0.0.0
+      - TZ=Asia/Seoul
+    volumes:
+      # 모델 파일 읽기 전용 (ML Trainer와 공유)
+      - ml_models:/app/models/phishing_detection_model:ro
+    networks:
+      - weave-network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    ports:
+      - "8000:8000"  # 개발용 (프로덕션에서는 제거 가능)
+
   api:
     image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
     environment:
@@ -131,6 +225,10 @@ services:
 
       - FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH:-/app/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json}
 
+      # ML Inference Server
+      - PHISHING_ML_INFERENCE_URL=${PHISHING_ML_INFERENCE_URL:-http://ml-inference:8000}
+      - PHISHING_ML_INFERENCE_ENABLED=${PHISHING_ML_INFERENCE_ENABLED:-true}
+
       # Timezone
       - TZ=Asia/Seoul
 
@@ -139,6 +237,8 @@ services:
     volumes:
       - jwt_keys:/app/keys
       - /home/ec2-user/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json:/app/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json:ro
+      # ML 모델 파일 (ML Trainer와 공유)
+      - ml_models:/app/models/phishing_detection_model:ro
     networks:
       - weave-network
     deploy:
@@ -187,6 +287,15 @@ volumes:
   redis_data:
     driver: local
   jwt_keys:
+    driver: local
+  # ML Training 관련 볼륨
+  ml_models:
+    driver: local
+  ml_training_data:
+    driver: local
+  ml_logs:
+    driver: local
+  ml_backups:
     driver: local
 
 networks:

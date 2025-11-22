@@ -1,0 +1,13 @@
+# FastAPI 추론 서버 의존성
+
+# 웹 프레임워크
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+
+# ML/AI
+tensorflow==2.15.0
+numpy==1.26.2
+
+# 유틸리티
+python-multipart==0.0.6

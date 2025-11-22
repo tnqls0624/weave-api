@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 public class PhishingDetectionService {
 
   private final PhishingPatternRepository patternRepository;
-  private final PhishingMLService mlService;
+  private final PhishingMLInferenceService mlInferenceService;
 
   /**
    * 피싱 탐지 수행
@@ -59,18 +59,30 @@ public class PhishingDetectionService {
     // 3. URL 분석
     totalScore += analyzeUrls(message, detectionReasons);
 
-    // 4. ML 모델 분석 (사용 가능한 경우)
+    // 4. ML 모델 분석 (Python 추론 서버 사용)
     double mlScore = 0.0;
-    if (mlService.isModelAvailable()) {
-      mlScore = mlService.predict(message);
-      log.debug("ML 모델 점수: {}", mlScore);
+    if (mlInferenceService.isAvailable()) {
+      try {
+        PhishingMLInferenceService.PredictionResult mlResult =
+            mlInferenceService.predict(sender, message, sensitivityLevel);
 
-      // ML 점수와 휴리스틱 점수 결합 (ML 60%, 휴리스틱 40%)
-      totalScore = (mlScore * 0.6) + (totalScore * 0.4);
+        mlScore = mlResult.getRiskScore();
+        log.debug("Python ML 추론 결과 - 점수: {}, 레벨: {}, 소스: {}",
+            mlScore, mlResult.getRiskLevel(), mlResult.getSource());
 
-      if (mlScore > 0.7) {
-        detectionReasons.add("AI 모델 피싱 판정");
+        // ML 점수와 휴리스틱 점수 결합 (ML 60%, 휴리스틱 40%)
+        totalScore = (mlScore * 0.6) + (totalScore * 0.4);
+
+        if (mlScore > 0.7 || mlResult.isPhishing()) {
+          detectionReasons.add("AI 모델 피싱 판정 (신뢰도: " +
+              String.format("%.2f", mlResult.getConfidence()) + ")");
+        }
+      } catch (Exception e) {
+        log.warn("Python ML 추론 실패, 휴리스틱만 사용: {}", e.getMessage());
+        // 추론 실패 시 휴리스틱 점수만 사용 (fallback)
       }
+    } else {
+      log.debug("Python ML 추론 서버 사용 불가, 휴리스틱만 사용");
     }
 
     // 5. 민감도 조정
