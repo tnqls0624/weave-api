@@ -68,11 +68,15 @@ public class UserResponseDto {
         .birthday(user.getBirthday())
         .inviteCode(user.getInviteCode())
         .fcmToken(user.getFcmToken())
-        .pushEnabled(user.getPushEnabled())
-        .locationEnabled(user.getLocationEnabled())
-        .phishingGuardEnabled(user.getPhishingGuardEnabled() != null ? user.getPhishingGuardEnabled() : false)
-        .phishingAutoBlock(user.getPhishingAutoBlock() != null ? user.getPhishingAutoBlock() : false)
-        .phishingSensitivityLevel(user.getPhishingSensitivityLevel() != null ? user.getPhishingSensitivityLevel() : "medium")
+        .pushEnabled(user.getPushEnabled() != null ? user.getPhishingGuardEnabled() : false)
+        .locationEnabled(user.getLocationEnabled() != null ? user.getPhishingGuardEnabled() : false)
+        .phishingGuardEnabled(
+            user.getPhishingGuardEnabled() != null ? user.getPhishingGuardEnabled() : false)
+        .phishingAutoBlock(
+            user.getPhishingAutoBlock() != null ? user.getPhishingAutoBlock() : false)
+        .phishingSensitivityLevel(
+            user.getPhishingSensitivityLevel() != null ? user.getPhishingSensitivityLevel()
+                : "medium")
         .avatarUrl(user.getAvatarUrl())
         .createdAt(user.getCreatedAt())
         .updatedAt(user.getUpdatedAt())
