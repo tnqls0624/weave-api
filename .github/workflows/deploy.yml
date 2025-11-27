@@ -39,18 +39,6 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Create ECR repositories if not exist
-        run: |
-          # ML Trainer 리포지토리 생성 (없으면)
-          aws ecr describe-repositories --repository-names weave-ml-trainer --region $AWS_REGION 2>/dev/null || \
-            aws ecr create-repository --repository-name weave-ml-trainer --region $AWS_REGION
-
-          # ML Inference 리포지토리 생성 (없으면)
-          aws ecr describe-repositories --repository-names weave-ml-inference --region $AWS_REGION 2>/dev/null || \
-            aws ecr create-repository --repository-name weave-ml-inference --region $AWS_REGION
-
-          echo "ECR 리포지토리 확인 완료"
-
       - name: Build and push Java API Docker image
         id: build-image
         run: |
@@ -59,20 +47,6 @@ jobs:
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA" >> $GITHUB_OUTPUT
-
-      - name: Build and push ML Trainer Docker image
-        run: |
-          docker build --no-cache -t $ECR_REGISTRY/weave-ml-trainer:$GITHUB_SHA ./ml_training
-          docker push $ECR_REGISTRY/weave-ml-trainer:$GITHUB_SHA
-          docker tag $ECR_REGISTRY/weave-ml-trainer:$GITHUB_SHA $ECR_REGISTRY/weave-ml-trainer:latest
-          docker push $ECR_REGISTRY/weave-ml-trainer:latest
-
-      - name: Build and push ML Inference Docker image
-        run: |
-          docker build --no-cache -t $ECR_REGISTRY/weave-ml-inference:$GITHUB_SHA ./ml_inference
-          docker push $ECR_REGISTRY/weave-ml-inference:$GITHUB_SHA
-          docker tag $ECR_REGISTRY/weave-ml-inference:$GITHUB_SHA $ECR_REGISTRY/weave-ml-inference:latest
-          docker push $ECR_REGISTRY/weave-ml-inference:latest
 
       - name: Prepare deployment files
         run: |
@@ -114,16 +88,6 @@ jobs:
 
           # Firebase
           FIREBASE_CONFIG_PATH=\${FIREBASE_CONFIG_PATH}
-
-          # ML Services
-          ML_TRAINER_IMAGE=${{ env.ECR_REGISTRY }}/weave-ml-trainer:${{ github.sha }}
-          ML_INFERENCE_IMAGE=${{ env.ECR_REGISTRY }}/weave-ml-inference:${{ github.sha }}
-          PHISHING_ML_INFERENCE_URL=\${PHISHING_ML_INFERENCE_URL:-http://ml-inference:8000}
-          PHISHING_ML_INFERENCE_ENABLED=\${PHISHING_ML_INFERENCE_ENABLED:-true}
-          ML_RETRAIN_DAYS=\${ML_RETRAIN_DAYS:-30}
-          ML_AUTO_DEPLOY=\${ML_AUTO_DEPLOY:-true}
-          ML_RUN_MODE=\${ML_RUN_MODE:-cron}
-          ML_CRON_SCHEDULE=\${ML_CRON_SCHEDULE:-0 2 * * 0}
 
           LOG_LEVEL=${{ env.LOG_LEVEL }}
           EOF
@@ -319,20 +283,20 @@ jobs:
             # MongoDB
             MONGODB_URI="${{ secrets.PROD_SPRING_DATA_MONGODB_URI }}"
             MONGODB_ROOT_PASSWORD="${{ secrets.PROD_MONGODB_ROOT_PASSWORD }}"
-
+            
             # Redis
             REDIS_PASSWORD="${{ secrets.PROD_REDIS_PASSWORD }}"
-
+            
             # JWT
             JWT_EXPIRATION="${{ secrets.PROD_JWT_EXPIRATION }}"
             JWT_REFRESH_EXPIRATION="${{ secrets.PROD_JWT_REFRESH_EXPIRATION }}"
             JWT_PRIVATE_KEY_PATH="${{ secrets.PROD_JWT_PRIVATE_KEY_PATH }}"
             JWT_PUBLIC_KEY_PATH="${{ secrets.PROD_JWT_PUBLIC_KEY_PATH }}"
-
+            
             # Holiday API
             HOLIDAY_API_KEY="${{ secrets.PROD_HOLIDAY_API_KEY }}"
             HOLIDAY_API_BASE_URL="${{ secrets.PROD_HOLIDAY_API_BASE_URL }}"
-
+            
             # AWS
             AWS_REGION="${{ secrets.PROD_AWS_REGION }}"
             AWS_S3_BUCKET="${{ secrets.PROD_AWS_S3_BUCKET }}"
@@ -340,22 +304,12 @@ jobs:
             AWS_S3_UPLOAD_PREFIX="${{ secrets.PROD_AWS_S3_UPLOAD_PREFIX }}"
             AWS_ACCESS_KEY_ID="${{ secrets.PROD_AWS_ACCESS_KEY_ID }}"
             AWS_SECRET_ACCESS_KEY="${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}"
-
-            # ML Services
-            PHISHING_ML_INFERENCE_URL="${{ secrets.PROD_PHISHING_ML_INFERENCE_URL }}"
-            PHISHING_ML_INFERENCE_ENABLED="${{ secrets.PROD_PHISHING_ML_INFERENCE_ENABLED }}"
-            ML_RETRAIN_DAYS="${{ secrets.PROD_ML_RETRAIN_DAYS }}"
-            ML_AUTO_DEPLOY="${{ secrets.PROD_ML_AUTO_DEPLOY }}"
-            ML_RUN_MODE="${{ secrets.PROD_ML_RUN_MODE }}"
-            ML_CRON_SCHEDULE="${{ secrets.PROD_ML_CRON_SCHEDULE }}"
-
+            
             # EC2에서 직접 배포 실행 (배포 파일은 이미 업로드됨)
             cd ~/deployment
-
+            
             export ECR_REGISTRY=${{ env.ECR_REGISTRY }}
             export IMAGE_TAG=${{ github.sha }}
-            export ML_TRAINER_IMAGE=${{ env.ECR_REGISTRY }}/weave-ml-trainer:${{ github.sha }}
-            export ML_INFERENCE_IMAGE=${{ env.ECR_REGISTRY }}/weave-ml-inference:${{ github.sha }}
             export MONGODB_URI=${MONGODB_URI}
             export MONGODB_ROOT_PASSWORD=${MONGODB_ROOT_PASSWORD}
             export REDIS_PASSWORD=${REDIS_PASSWORD}
@@ -372,12 +326,5 @@ jobs:
             export FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH}
             export AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
             export AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-            export PHISHING_ML_INFERENCE_URL=${PHISHING_ML_INFERENCE_URL}
-            export PHISHING_ML_INFERENCE_ENABLED=${PHISHING_ML_INFERENCE_ENABLED}
-            export ML_RETRAIN_DAYS=${ML_RETRAIN_DAYS}
-            export ML_AUTO_DEPLOY=${ML_AUTO_DEPLOY}
-            export ML_RUN_MODE=${ML_RUN_MODE}
-            export ML_CRON_SCHEDULE=${ML_CRON_SCHEDULE}
-
             chmod +x deploy.sh
             ./deploy.sh
