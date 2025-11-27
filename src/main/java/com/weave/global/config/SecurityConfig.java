@@ -49,7 +49,8 @@ public class SecurityConfig {
                 "/swagger/**",
                 "/v3/api-docs/**",
                 "/swagger-ui/**",
-                "/api/ws/**").permitAll() // 로그인, 회원가입, 헬스체크, WebSocket 허용
+                "/privacy-policy",
+                "/api/ws/**").permitAll() // 로그인, 회원가입, 헬스체크, WebSocket, 개인정보처리방침 허용
             .anyRequest().authenticated()
         ).addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
             UsernamePasswordAuthenticationFilter.class);
