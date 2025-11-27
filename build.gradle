@@ -54,6 +54,7 @@ dependencies {
     runtimeOnly 'org.xerial.snappy:snappy-java:1.1.10.5'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+    implementation 'org.apache.commons:commons-pool2'
 
     // Logging & Monitoring
     implementation 'com.github.maricn:logback-slack-appender:1.6.1'

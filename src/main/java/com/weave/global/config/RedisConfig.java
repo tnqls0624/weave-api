@@ -8,9 +8,10 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.lettuce.core.ClientOptions;
 import io.lettuce.core.SocketOptions;
+import io.lettuce.core.api.StatefulConnection;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.Duration;
-import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.beans.factory.annotation.Value;
@@ -65,7 +66,7 @@ public class RedisConfig {
     }
 
     // 커넥션 풀 설정
-    GenericObjectPoolConfig<Object> poolConfig = new GenericObjectPoolConfig<>();
+    GenericObjectPoolConfig<StatefulConnection<?, ?>> poolConfig = new GenericObjectPoolConfig<>();
     poolConfig.setMaxTotal(50);          // 최대 커넥션 수
     poolConfig.setMaxIdle(25);           // 최대 유휴 커넥션
     poolConfig.setMinIdle(5);            // 최소 유휴 커넥션
