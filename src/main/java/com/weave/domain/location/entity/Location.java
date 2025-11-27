@@ -18,6 +18,8 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @AllArgsConstructor
 @Document(collection = "locations")
 @CompoundIndex(name = "workspace_user_idx", def = "{'workspace_id': 1, 'user_id': 1}")
+@CompoundIndex(name = "workspace_timestamp_idx", def = "{'workspace_id': 1, 'timestamp': -1}")
+@CompoundIndex(name = "workspace_user_timestamp_idx", def = "{'workspace_id': 1, 'user_id': 1, 'timestamp': -1}")
 public class Location {
 
   @Id

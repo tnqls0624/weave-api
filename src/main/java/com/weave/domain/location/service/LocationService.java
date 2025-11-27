@@ -8,7 +8,11 @@ import com.weave.domain.user.entity.User;
 import com.weave.domain.user.repository.UserRepository;
 import com.weave.global.BusinessException;
 import com.weave.global.ErrorCode;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,9 +29,7 @@ public class LocationService {
 
   public LocationResponseDto saveLocation(String workspaceId, LocationRequestDto dto,
       String email) {
-    log.info("save location: {}", dto);
-    log.info("save location by user: {}", email);
-    // 워크스페이스 검증
+    log.debug("save location: {}", dto);
     // 사용자 검증
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -46,19 +48,28 @@ public class LocationService {
   }
 
   public List<LocationResponseDto> getLocations(String workspaceId) {
-    // 워크스페이스의 모든 위치 조회
-    List<Location> locations = locationRepository.findByWorkspaceIdOrderByTimestampDesc(
+    // 최적화: Aggregation으로 사용자별 최신 위치만 조회 (DB 레벨에서 처리)
+    List<Location> latestLocations = locationRepository.findLatestLocationsByWorkspaceId(
         new ObjectId(workspaceId));
 
-    // 각 사용자별 최신 위치만 필터링
-    return locations.stream()
-        .collect(Collectors.groupingBy(Location::getUserId))
-        .values().stream()
-        .map(list -> list.get(0)) // 최신 위치 (timestamp desc로 정렬되어 있음)
+    if (latestLocations.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    // 최적화: 모든 사용자 ID를 모아서 한 번에 조회 (N+1 문제 해결)
+    Set<ObjectId> userIds = latestLocations.stream()
+        .map(Location::getUserId)
+        .collect(Collectors.toSet());
+
+    Map<ObjectId, User> userMap = userRepository.findAllById(userIds).stream()
+        .collect(Collectors.toMap(User::getId, Function.identity()));
+
+    // 위치 데이터와 사용자 정보 매핑
+    return latestLocations.stream()
         .map(location -> {
-          User user = userRepository.findById(location.getUserId())
-              .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-          return LocationResponseDto.from(location, user.getName());
+          User user = userMap.get(location.getUserId());
+          String userName = user != null ? user.getName() : "Unknown";
+          return LocationResponseDto.from(location, userName);
         })
         .collect(Collectors.toList());
   }
