@@ -9,21 +9,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 /**
- * 피싱 알림 서비스 FCM을 통한 푸시 알림 전송
+ * 피싱 알림 서비스 FCM을 통한 푸시 알림 전송 (WebClient 비동기 방식으로 성능 최적화)
  */
 @Slf4j
 @Service
@@ -32,7 +33,7 @@ public class PhishingNotificationService {
 
   private final UserRepository userRepository;
   private final WorkspaceRepository workspaceRepository;
-  private final RestTemplate restTemplate = new RestTemplate();
+  private final WebClient webClient;
 
   @Value("${fcm.server.key:}")
   private String fcmServerKey;
@@ -43,6 +44,7 @@ public class PhishingNotificationService {
   /**
    * 고위험 피싱 알림 전송
    */
+  @Async("notificationExecutor")
   public void sendHighRiskAlert(PhishingReport report) {
     try {
       // 신고자 정보 조회
@@ -57,7 +59,8 @@ public class PhishingNotificationService {
       String body = String.format("발신자 %s 로부터 고위험 피싱 메시지가 탐지되었습니다.", report.getSender());
 
       // 사용자에게 알림
-      sendPushNotification(user.getFcmToken(), title, body, createDataPayload(report));
+      sendPushNotificationAsync(user.getFcmToken(), title, body, createDataPayload(report))
+          .subscribe();
 
       // 워크스페이스 멤버들에게도 알림
       if (report.getWorkspaceId() != null) {
@@ -70,8 +73,9 @@ public class PhishingNotificationService {
   }
 
   /**
-   * 워크스페이스 멤버 알림
+   * 워크스페이스 멤버 알림 (비동기 병렬 처리)
    */
+  @Async("notificationExecutor")
   public void notifyWorkspaceMembers(ObjectId workspaceId, String title, String body,
       PhishingReport report) {
     try {
@@ -81,25 +85,28 @@ public class PhishingNotificationService {
       }
 
       Workspace workspace = workspaceOpt.get();
-      List<String> memberIds = workspace.getUsers().stream()
-          .map(ObjectId::toString)
-          .collect(java.util.stream.Collectors.toList());
+      Set<ObjectId> memberIds = workspace.getUsers().stream()
+          .filter(id -> !id.equals(report.getUserId()))  // 본인 제외
+          .collect(Collectors.toSet());
 
-      // 본인 제외
-      memberIds.remove(report.getUserId().toString());
+      if (memberIds.isEmpty()) {
+        return;
+      }
 
-      // 각 멤버에게 알림
-      CompletableFuture.runAsync(() -> {
-        memberIds.forEach(memberId -> {
-          try {
-            Optional<User> memberOpt = userRepository.findById(new ObjectId(memberId));
-            memberOpt.ifPresent(member -> sendPushNotification(member.getFcmToken(), title, body,
-                createDataPayload(report)));
-          } catch (Exception e) {
-            log.error("Failed to notify workspace member: {}", memberId, e);
-          }
-        });
-      });
+      // 모든 멤버 한 번에 조회 (N+1 방지)
+      List<User> members = userRepository.findAllById(memberIds);
+      Map<String, Object> dataPayload = createDataPayload(report);
+
+      // 비동기 병렬 알림 전송
+      Flux.fromIterable(members)
+          .filter(member -> member.getFcmToken() != null && !member.getFcmToken().isEmpty())
+          .flatMap(member -> sendPushNotificationAsync(member.getFcmToken(), title, body, dataPayload)
+              .onErrorResume(e -> {
+                log.error("Failed to notify workspace member: {}", member.getId(), e);
+                return Mono.empty();
+              }))
+          .subscribeOn(Schedulers.boundedElastic())
+          .subscribe();
 
     } catch (Exception e) {
       log.error("Failed to notify workspace members", e);
@@ -109,6 +116,7 @@ public class PhishingNotificationService {
   /**
    * 통계 알림 전송 (일일/주간 리포트)
    */
+  @Async("notificationExecutor")
   public void sendStatisticsReport(String userId, Map<String, Object> stats, String period) {
     try {
       Optional<User> userOpt = userRepository.findById(new ObjectId(userId));
@@ -131,7 +139,7 @@ public class PhishingNotificationService {
       data.put("period", period);
       data.putAll(stats);
 
-      sendPushNotification(user.getFcmToken(), title, body, data);
+      sendPushNotificationAsync(user.getFcmToken(), title, body, data).subscribe();
 
     } catch (Exception e) {
       log.error("Failed to send statistics report", e);
@@ -141,6 +149,7 @@ public class PhishingNotificationService {
   /**
    * 근처 피싱 알림
    */
+  @Async("notificationExecutor")
   public void sendNearbyPhishingAlert(String userId, List<PhishingReport> nearbyReports) {
     try {
       Optional<User> userOpt = userRepository.findById(new ObjectId(userId));
@@ -166,7 +175,7 @@ public class PhishingNotificationService {
           })
           .toList());
 
-      sendPushNotification(user.getFcmToken(), title, body, data);
+      sendPushNotificationAsync(user.getFcmToken(), title, body, data).subscribe();
 
     } catch (Exception e) {
       log.error("Failed to send nearby phishing alert", e);
@@ -176,6 +185,7 @@ public class PhishingNotificationService {
   /**
    * 패턴 업데이트 알림 (관리자용)
    */
+  @Async("notificationExecutor")
   public void sendPatternUpdateNotification(List<String> adminIds, String action,
       String patternName) {
     String title = "🔧 피싱 패턴 업데이트";
@@ -187,62 +197,62 @@ public class PhishingNotificationService {
     data.put("action", action);
     data.put("patternName", patternName);
 
-    adminIds.forEach(adminId -> {
-      try {
-        Optional<User> adminOpt = userRepository.findById(new ObjectId(adminId));
-        adminOpt.ifPresent(user -> sendPushNotification(user.getFcmToken(), title, body, data));
-      } catch (Exception e) {
-        log.error("Failed to notify admin: {}", adminId, e);
-      }
-    });
+    // 모든 관리자 한 번에 조회
+    Set<ObjectId> adminObjectIds = adminIds.stream()
+        .map(ObjectId::new)
+        .collect(Collectors.toSet());
+    List<User> admins = userRepository.findAllById(adminObjectIds);
+
+    // 비동기 병렬 알림 전송
+    Flux.fromIterable(admins)
+        .filter(admin -> admin.getFcmToken() != null && !admin.getFcmToken().isEmpty())
+        .flatMap(admin -> sendPushNotificationAsync(admin.getFcmToken(), title, body, data)
+            .onErrorResume(e -> {
+              log.error("Failed to notify admin: {}", admin.getId(), e);
+              return Mono.empty();
+            }))
+        .subscribeOn(Schedulers.boundedElastic())
+        .subscribe();
   }
 
   /**
-   * FCM 푸시 알림 전송
+   * FCM 푸시 알림 전송 (비동기 WebClient 사용)
    */
-  private void sendPushNotification(String fcmToken, String title, String body,
+  private Mono<Void> sendPushNotificationAsync(String fcmToken, String title, String body,
       Map<String, Object> data) {
     if (fcmToken == null || fcmToken.isEmpty()) {
       log.debug("No FCM token available for notification");
-      return;
+      return Mono.empty();
     }
 
     if (fcmServerKey == null || fcmServerKey.isEmpty()) {
       log.warn("FCM server key not configured");
-      return;
+      return Mono.empty();
     }
 
-    try {
-      HttpHeaders headers = new HttpHeaders();
-      headers.setContentType(MediaType.APPLICATION_JSON);
-      headers.set("Authorization", "key=" + fcmServerKey);
+    Map<String, Object> message = new HashMap<>();
+    message.put("to", fcmToken);
 
-      Map<String, Object> message = new HashMap<>();
-      message.put("to", fcmToken);
+    Map<String, String> notification = new HashMap<>();
+    notification.put("title", title);
+    notification.put("body", body);
+    notification.put("sound", "default");
+    notification.put("badge", "1");
 
-      Map<String, String> notification = new HashMap<>();
-      notification.put("title", title);
-      notification.put("body", body);
-      notification.put("sound", "default");
-      notification.put("badge", "1");
+    message.put("notification", notification);
+    message.put("data", data);
+    message.put("priority", "high");
 
-      message.put("notification", notification);
-      message.put("data", data);
-      message.put("priority", "high");
-
-      HttpEntity<Map<String, Object>> request = new HttpEntity<>(message, headers);
-      ResponseEntity<String> response = restTemplate.postForEntity(fcmApiUrl, request,
-          String.class);
-
-      if (response.getStatusCode() == HttpStatus.OK) {
-        log.debug("Push notification sent successfully");
-      } else {
-        log.warn("Push notification failed with status: {}", response.getStatusCode());
-      }
-
-    } catch (Exception e) {
-      log.error("Failed to send push notification", e);
-    }
+    return webClient.post()
+        .uri(fcmApiUrl)
+        .contentType(MediaType.APPLICATION_JSON)
+        .header("Authorization", "key=" + fcmServerKey)
+        .bodyValue(message)
+        .retrieve()
+        .bodyToMono(String.class)
+        .doOnSuccess(response -> log.debug("Push notification sent successfully"))
+        .doOnError(e -> log.error("Failed to send push notification", e))
+        .then();
   }
 
   /**
@@ -270,20 +280,25 @@ public class PhishingNotificationService {
   }
 
   /**
-   * 일괄 알림 전송 (배치)
+   * 일괄 알림 전송 (배치) - 비동기 병렬 처리
    */
+  @Async("notificationExecutor")
   public void sendBatchNotifications(List<String> userIds, String title, String body,
       Map<String, Object> data) {
-    CompletableFuture.runAsync(() -> {
-      userIds.parallelStream().forEach(userId -> {
-        try {
-          Optional<User> userOpt = userRepository.findById(new ObjectId(userId));
-          userOpt.ifPresent(user -> sendPushNotification(user.getFcmToken(), title, body, data));
-        } catch (Exception e) {
-          log.error("Failed to send batch notification to user: {}", userId, e);
-        }
-      });
-    });
+    Set<ObjectId> objectIds = userIds.stream()
+        .map(ObjectId::new)
+        .collect(Collectors.toSet());
+    List<User> users = userRepository.findAllById(objectIds);
+
+    Flux.fromIterable(users)
+        .filter(user -> user.getFcmToken() != null && !user.getFcmToken().isEmpty())
+        .flatMap(user -> sendPushNotificationAsync(user.getFcmToken(), title, body, data)
+            .onErrorResume(e -> {
+              log.error("Failed to send batch notification to user: {}", user.getId(), e);
+              return Mono.empty();
+            }))
+        .subscribeOn(Schedulers.boundedElastic())
+        .subscribe();
   }
 
   /**
@@ -294,22 +309,24 @@ public class PhishingNotificationService {
       return;
     }
 
-    try {
-      HttpHeaders headers = new HttpHeaders();
-      headers.setContentType(MediaType.APPLICATION_JSON);
-      headers.set("Authorization", "key=" + fcmServerKey);
-
-      Map<String, Object> message = new HashMap<>();
-      message.put("to", fcmToken);
-      message.put("data", data);
-      message.put("priority", "high");
-      message.put("content_available", true);  // iOS silent push
-
-      HttpEntity<Map<String, Object>> request = new HttpEntity<>(message, headers);
-      restTemplate.postForEntity(fcmApiUrl, request, String.class);
-
-    } catch (Exception e) {
-      log.error("Failed to send silent push", e);
+    if (fcmServerKey == null || fcmServerKey.isEmpty()) {
+      return;
     }
+
+    Map<String, Object> message = new HashMap<>();
+    message.put("to", fcmToken);
+    message.put("data", data);
+    message.put("priority", "high");
+    message.put("content_available", true);  // iOS silent push
+
+    webClient.post()
+        .uri(fcmApiUrl)
+        .contentType(MediaType.APPLICATION_JSON)
+        .header("Authorization", "key=" + fcmServerKey)
+        .bodyValue(message)
+        .retrieve()
+        .bodyToMono(String.class)
+        .doOnError(e -> log.error("Failed to send silent push", e))
+        .subscribe();
   }
 }

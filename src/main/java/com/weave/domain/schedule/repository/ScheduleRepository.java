@@ -38,5 +38,24 @@ public interface ScheduleRepository extends MongoRepository<Schedule, ObjectId> 
    * 참여자가 포함된 일정 조회
    */
   List<Schedule> findByParticipantsContaining(ObjectId userId);
+
+  /**
+   * 워크스페이스별 특정 기간 일정 조회 (DB 레벨 필터링으로 성능 최적화)
+   */
+  @Query("{ 'workspace': ?0, 'start_date': { $gte: ?1, $lt: ?2 } }")
+  List<Schedule> findByWorkspaceAndDateRange(ObjectId workspaceId, Date startDate, Date endDate);
+
+  /**
+   * 워크스페이스별 특정 날짜 이후 일정 조회 (Feed용 최적화)
+   */
+  @Query("{ 'workspace': ?0, 'start_date': { $gte: ?1 }, 'participants': ?2 }")
+  List<Schedule> findByWorkspaceAndStartDateAfterAndParticipant(
+      ObjectId workspaceId, Date startDate, ObjectId participantId);
+
+  /**
+   * 워크스페이스별 연도 일정 조회
+   */
+  @Query("{ 'workspace': ?0, 'start_date': { $gte: ?1, $lt: ?2 } }")
+  List<Schedule> findByWorkspaceAndYear(ObjectId workspaceId, Date yearStart, Date yearEnd);
 }
 

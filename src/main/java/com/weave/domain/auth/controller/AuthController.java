@@ -5,6 +5,7 @@ import com.weave.domain.auth.dto.LoginResponseDto;
 import com.weave.domain.auth.dto.RefreshTokenRequestDto;
 import com.weave.domain.auth.dto.SocialLoginRequestDto;
 import com.weave.domain.auth.dto.SocialLoginResponseDto;
+import com.weave.domain.auth.dto.TestLoginRequestDto;
 import com.weave.domain.auth.dto.TestTokenRequestDto;
 import com.weave.domain.auth.dto.TestTokenResponseDto;
 import com.weave.domain.auth.service.AuthService;
@@ -66,5 +67,13 @@ public class AuthController {
   @PostMapping("/test-token")
   public ApiResponse<TestTokenResponseDto> generateTestToken() {
     return ApiResponse.ok(authService.generateTestToken("yuki0624@nate.com"));
+  }
+
+  // 테스트 계정 로그인 (App Store 심사용)
+  @Tag(name = "AUTH")
+  @Operation(summary = "테스트 계정 로그인", description = "App Store 심사용 테스트 계정 로그인. 이메일과 비밀번호로 로그인합니다.")
+  @PostMapping("/test-login")
+  public ApiResponse<SocialLoginResponseDto> testLogin(@Valid @RequestBody TestLoginRequestDto dto) {
+    return ApiResponse.ok(authService.testAccountLogin(dto));
   }
 }

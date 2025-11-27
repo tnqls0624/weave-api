@@ -1,11 +1,14 @@
 package com.weave.domain.auth.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.weave.domain.auth.dto.KakaoUserResponseDto;
 import com.weave.domain.auth.dto.LoginRequestDto;
 import com.weave.domain.auth.dto.LoginResponseDto;
 import com.weave.domain.auth.dto.RefreshTokenRequestDto;
 import com.weave.domain.auth.dto.SocialLoginRequestDto;
 import com.weave.domain.auth.dto.SocialLoginResponseDto;
+import com.weave.domain.auth.dto.TestLoginRequestDto;
 import com.weave.domain.auth.dto.TestTokenResponseDto;
 import com.weave.domain.auth.entity.RefreshToken;
 import com.weave.domain.auth.jwt.JwtTokenProvider;
@@ -15,12 +18,18 @@ import com.weave.domain.user.entity.LoginType;
 import com.weave.domain.user.entity.User;
 import com.weave.global.BusinessException;
 import com.weave.global.ErrorCode;
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.spec.RSAPublicKeySpec;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -37,6 +46,13 @@ public class AuthService {
   private final JwtTokenProvider jwtTokenProvider;
   private final WebClient webClient;
   private final RefreshTokenRepository refreshTokenRepository;
+  private final ObjectMapper objectMapper;
+
+  @Value("${app.test-account.email:test@weave.com}")
+  private String testAccountEmail;
+
+  @Value("${app.test-account.password:WeaveTest2024!}")
+  private String testAccountPassword;
 
   // 이메일 로그인
   public LoginResponseDto login(LoginRequestDto dto) {
@@ -74,7 +90,8 @@ public class AuthService {
     try {
       switch (LoginType.valueOf(socialLoginRequestDto.getLoginType())) {
         case KAKAO -> user = handleKakaoLogin(socialLoginRequestDto, inviteCode);
-        case GOOGLE, FACEBOOK, NAVER, APPLE ->
+        case APPLE -> user = handleAppleLogin(socialLoginRequestDto, inviteCode);
+        case GOOGLE, FACEBOOK, NAVER ->
             throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED, "아직 지원하지 않는 로그인 타입입니다.");
         default -> throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED);
       }
@@ -230,6 +247,160 @@ public class AuthService {
         .accessToken(accessToken)
         .expiresAt(expiresAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
         .message("1년 유효한 테스트용 액세스 토큰입니다. 서버 재부팅 후에도 사용 가능합니다.")
+        .build();
+  }
+
+  /**
+   * Apple 로그인 처리
+   * Apple identity token (JWT)을 검증하고 사용자 정보를 추출
+   */
+  private User handleAppleLogin(SocialLoginRequestDto dto, String inviteCode) {
+    try {
+      String identityToken = dto.getAccessToken();
+
+      // JWT 디코딩 (검증 없이 페이로드 추출)
+      String[] parts = identityToken.split("\\.");
+      if (parts.length != 3) {
+        throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED, "잘못된 Apple 토큰 형식입니다.");
+      }
+
+      // Header에서 kid 추출
+      String headerJson = new String(Base64.getUrlDecoder().decode(parts[0]));
+      JsonNode header = objectMapper.readTree(headerJson);
+      String kid = header.get("kid").asText();
+
+      // Apple 공개키로 토큰 검증
+      verifyAppleToken(identityToken, kid);
+
+      // Payload 디코딩
+      String payloadJson = new String(Base64.getUrlDecoder().decode(parts[1]));
+      JsonNode payload = objectMapper.readTree(payloadJson);
+
+      String appleUserId = payload.get("sub").asText();
+      String email = payload.has("email") ? payload.get("email").asText() : null;
+
+      log.info("Apple login - sub: {}, email: '{}'", appleUserId, email);
+
+      // 이메일이 없는 경우 Apple User ID 기반 이메일 생성
+      if (email == null || email.isBlank()) {
+        email = appleUserId + "@privaterelay.appleid.com";
+        log.info("Apple login - email not provided, using generated email: {}", email);
+      }
+
+      String finalEmail = email;
+      return authRepository.findByEmail(email)
+          .orElseGet(() ->
+              authRepository.save(
+                  User.builder()
+                      .email(finalEmail)
+                      .name("Apple User")
+                      .loginType("APPLE")
+                      .inviteCode(inviteCode)
+                      .pushEnabled(true)
+                      .build()
+              )
+          );
+    } catch (BusinessException e) {
+      throw e;
+    } catch (Exception e) {
+      log.error("Apple login failed", e);
+      throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED, "Apple 로그인 처리 중 오류가 발생했습니다.");
+    }
+  }
+
+  /**
+   * Apple 공개키로 토큰 검증
+   */
+  private void verifyAppleToken(String token, String kid) {
+    try {
+      // Apple 공개키 가져오기
+      String keysJson = webClient.get()
+          .uri("https://appleid.apple.com/auth/keys")
+          .retrieve()
+          .bodyToMono(String.class)
+          .block();
+
+      JsonNode keysNode = objectMapper.readTree(keysJson);
+      JsonNode keys = keysNode.get("keys");
+
+      JsonNode matchingKey = null;
+      for (JsonNode key : keys) {
+        if (kid.equals(key.get("kid").asText())) {
+          matchingKey = key;
+          break;
+        }
+      }
+
+      if (matchingKey == null) {
+        throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED, "Apple 공개키를 찾을 수 없습니다.");
+      }
+
+      // RSA 공개키 생성
+      String n = matchingKey.get("n").asText();
+      String e = matchingKey.get("e").asText();
+
+      byte[] nBytes = Base64.getUrlDecoder().decode(n);
+      byte[] eBytes = Base64.getUrlDecoder().decode(e);
+
+      BigInteger modulus = new BigInteger(1, nBytes);
+      BigInteger exponent = new BigInteger(1, eBytes);
+
+      RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
+      KeyFactory factory = KeyFactory.getInstance("RSA");
+      PublicKey publicKey = factory.generatePublic(spec);
+
+      // JWT 검증
+      io.jsonwebtoken.Jwts.parser()
+          .verifyWith((java.security.interfaces.RSAPublicKey) publicKey)
+          .build()
+          .parseSignedClaims(token);
+
+      log.info("Apple token verified successfully");
+    } catch (BusinessException ex) {
+      throw ex;
+    } catch (Exception ex) {
+      log.error("Apple token verification failed", ex);
+      throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAILED, "Apple 토큰 검증에 실패했습니다.");
+    }
+  }
+
+  /**
+   * 테스트 계정 로그인 (App Store 심사용)
+   */
+  public SocialLoginResponseDto testAccountLogin(TestLoginRequestDto dto) {
+    log.info("Test account login attempt - email: {}", dto.getEmail());
+
+    // 테스트 계정 검증
+    if (!testAccountEmail.equals(dto.getEmail()) || !testAccountPassword.equals(dto.getPassword())) {
+      throw new BusinessException(ErrorCode.INVALID_LOGIN, "테스트 계정 정보가 일치하지 않습니다.");
+    }
+
+    final String inviteCode = generateInviteCode();
+
+    // 테스트 사용자 조회 또는 생성
+    User user = authRepository.findByEmail(testAccountEmail)
+        .orElseGet(() ->
+            authRepository.save(
+                User.builder()
+                    .email(testAccountEmail)
+                    .name("Test User")
+                    .loginType("TEST")
+                    .inviteCode(inviteCode)
+                    .pushEnabled(false)
+                    .build()
+            )
+        );
+
+    String accessToken = jwtTokenProvider.createToken(user.getEmail());
+    String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+
+    saveRefreshToken(user.getEmail(), refreshToken);
+
+    log.info("Test account login success - userId: {}", user.getId());
+
+    return SocialLoginResponseDto.builder()
+        .accessToken(accessToken)
+        .refreshToken(refreshToken)
         .build();
   }
 }

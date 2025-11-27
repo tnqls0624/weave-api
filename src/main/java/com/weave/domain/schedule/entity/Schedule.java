@@ -18,6 +18,9 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 @Document(collection = "schedules")
 @CompoundIndex(name = "workspace_startdate_idx", def = "{'workspace': 1, 'start_date': 1}")
+@CompoundIndex(name = "workspace_enddate_idx", def = "{'workspace': 1, 'end_date': 1}")
+@CompoundIndex(name = "workspace_dates_idx", def = "{'workspace': 1, 'start_date': 1, 'end_date': 1}")
+@CompoundIndex(name = "participants_startdate_idx", def = "{'participants': 1, 'start_date': 1}")
 @Data
 @Builder
 @NoArgsConstructor

@@ -134,7 +134,7 @@ public class WorkspaceService {
     ObjectId workspaceId;
     try {
       workspaceId = new ObjectId(id);
-      log.info("Finding workspace schedule feed for workspace ID: {}", workspaceId);
+      log.debug("Finding workspace schedule feed for workspace ID: {}", workspaceId);
     } catch (IllegalArgumentException e) {
       throw new BusinessException(ErrorCode.VALIDATION_ERROR, "Invalid workspace ID");
     }
@@ -147,21 +147,13 @@ public class WorkspaceService {
     int currentYear = today.getYear();
     ObjectId userId = user.getId();
 
-    // 이번년도 스케줄 조회
-    List<Schedule> allSchedules = scheduleRepository.findByWorkspace(workspaceId);
-    List<Schedule> upcomingSchedules = allSchedules.stream()
-        .filter(s -> {
-          LocalDate scheduleDate = s.getStartDate().toInstant()
-              .atZone(java.time.ZoneId.of("Asia/Seoul"))
-              .toLocalDate();
-          // 오늘 이후이고, 이번년도이며, 내가 참여자인 스케줄만 필터링
-          boolean isUpcomingThisYear =
-              !scheduleDate.isBefore(today) && scheduleDate.getYear() == currentYear;
-          boolean isParticipant =
-              s.getParticipants() != null && s.getParticipants().contains(userId);
-          return isUpcomingThisYear && isParticipant;
-        })
-        .collect(Collectors.toList());
+    // 최적화: DB 레벨에서 날짜 + 참여자 필터링
+    Date todayStart = Date.from(today.atStartOfDay(java.time.ZoneId.of("Asia/Seoul")).toInstant());
+    Date yearEnd = Date.from(LocalDate.of(currentYear, 12, 31)
+        .plusDays(1).atStartOfDay(java.time.ZoneId.of("Asia/Seoul")).toInstant());
+
+    List<Schedule> upcomingSchedules = scheduleRepository
+        .findByWorkspaceAndStartDateAfterAndParticipant(workspaceId, todayStart, userId);
 
     // 이번년도 공휴일 조회
     List<HolidayDto> currentYearHolidays = holidayService.getHolidaysByYear(currentYear);
