@@ -1,6 +1,50 @@
-version: '3.8'
-
 services:
+  # ============================================
+  # Docker Socket Proxy (보안 강화)
+  # Traefik이 직접 Docker Socket에 접근하지 않도록 프록시 사용
+  # ============================================
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:latest
+    environment:
+      - CONTAINERS=1
+      - SERVICES=1
+      - TASKS=1
+      - NETWORKS=1
+      - NODES=1
+      - INFO=1
+      - VERSION=1
+      - POST=0
+      - BUILD=0
+      - COMMIT=0
+      - CONFIGS=0
+      - DISTRIBUTION=0
+      - EXEC=0
+      - GRPC=0
+      - IMAGES=0
+      - PLUGINS=0
+      - SECRETS=0
+      - SESSION=0
+      - SWARM=0
+      - SYSTEM=0
+      - VOLUMES=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - socket-proxy
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 64M
+
+  # ============================================
+  # Traefik (Reverse Proxy & Load Balancer)
+  # ============================================
   traefik:
     image: traefik:v2.10
     command:
@@ -9,21 +53,36 @@ services:
       - "--providers.docker.swarmMode=true"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.network=weave-network"
+      # Docker Socket Proxy 사용
+      - "--providers.docker.endpoint=tcp://docker-socket-proxy:2375"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      # 메트릭 활성화
       - "--metrics.prometheus=true"
-      - "--accesslog=false"
-      - "--log.level=WARN"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - "--metrics.prometheus.addEntryPointsLabels=true"
+      - "--metrics.prometheus.addServicesLabels=true"
+      - "--metrics.prometheus.buckets=0.1,0.3,1.2,5.0"
+      # 접근 로그 활성화 (JSON 형식)
+      - "--accesslog=true"
+      - "--accesslog.format=json"
+      - "--accesslog.fields.defaultmode=keep"
+      - "--accesslog.fields.headers.defaultmode=keep"
+      - "--log.level=INFO"
     networks:
       - weave-network
+      - socket-proxy
+    depends_on:
+      - docker-socket-proxy
     deploy:
       mode: replicated
       replicas: 1
       placement:
         constraints:
           - node.role == manager
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
       labels:
         - "traefik.enable=true"
         - "traefik.http.routers.dashboard.rule=Host(`traefik.weave.local`)"
@@ -43,6 +102,155 @@ services:
         protocol: tcp
         mode: host
 
+  # ============================================
+  # Loki (로그 수집)
+  # ============================================
+  loki:
+    image: grafana/loki:2.9.0
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_data:/loki
+    networks:
+      - weave-network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3100/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # Prometheus (메트릭 수집)
+  # ============================================
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - prometheus_data:/prometheus
+      - /home/ec2-user/monitoring/prometheus:/etc/prometheus:ro
+    networks:
+      - weave-network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================
+  # AlertManager (알림 관리)
+  # ============================================
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    volumes:
+      - alertmanager_data:/alertmanager
+      - /home/ec2-user/monitoring/alertmanager:/etc/alertmanager:ro
+    networks:
+      - weave-network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: 64M
+
+  # ============================================
+  # Grafana (대시보드)
+  # ============================================
+  grafana:
+    image: grafana/grafana:10.2.0
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://grafana.weave.local
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - /home/ec2-user/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - weave-network
+    depends_on:
+      - prometheus
+      - loki
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.grafana.rule=Host(`grafana.weave.local`)"
+        - "traefik.http.routers.grafana.entrypoints=web"
+        - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+
+  # ============================================
+  # Jaeger (분산 트레이싱)
+  # ============================================
+  jaeger:
+    image: jaegertracing/all-in-one:1.51
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=badger
+      - BADGER_EPHEMERAL=false
+      - BADGER_DIRECTORY_VALUE=/badger/data
+      - BADGER_DIRECTORY_KEY=/badger/key
+    volumes:
+      - jaeger_data:/badger
+    networks:
+      - weave-network
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.jaeger.rule=Host(`jaeger.weave.local`)"
+        - "traefik.http.routers.jaeger.entrypoints=web"
+        - "traefik.http.services.jaeger.loadbalancer.server.port=16686"
+
+  # ============================================
+  # MongoDB
+  # ============================================
   mongodb:
     image: mongo:7.0
     command: mongod --wiredTigerCacheSizeGB 0.25 --quiet
@@ -72,6 +280,9 @@ services:
       retries: 3
       start_period: 40s
 
+  # ============================================
+  # Redis
+  # ============================================
   redis:
     image: redis:7-alpine
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD} --maxmemory 64mb --maxmemory-policy allkeys-lru --save ""
@@ -96,6 +307,9 @@ services:
       retries: 3
       start_period: 20s
 
+  # ============================================
+  # API Application
+  # ============================================
   api:
     image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
     environment:
@@ -136,6 +350,19 @@ services:
 
       # JVM 메모리 최적화
       - JAVA_TOOL_OPTIONS=-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=50.0 -Xss256k -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+DisableExplicitGC
+
+      # Actuator & Monitoring
+      - MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE=health,info,prometheus,metrics
+      - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
+      - MANAGEMENT_METRICS_TAGS_APPLICATION=weave-api
+
+      # OpenTelemetry (Jaeger)
+      - OTEL_SERVICE_NAME=weave-api
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_LOGS_EXPORTER=none
+
     volumes:
       - jwt_keys:/app/keys
       - /home/ec2-user/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json:/app/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json:ro
@@ -157,6 +384,13 @@ services:
         delay: 5s
         max_attempts: 3
         window: 120s
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
       labels:
         - "traefik.enable=true"
         # CORS 미들웨어 정의
@@ -179,6 +413,7 @@ services:
         - "traefik.http.routers.api.entrypoints=web"
         - "traefik.http.routers.api.service=api"
         - "traefik.http.routers.api.middlewares=api-cors"
+
 volumes:
   mongodb_data:
     driver: local
@@ -188,8 +423,21 @@ volumes:
     driver: local
   jwt_keys:
     driver: local
+  loki_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+  grafana_data:
+    driver: local
+  jaeger_data:
+    driver: local
 
 networks:
   weave-network:
     driver: overlay
     attachable: true
+  socket-proxy:
+    driver: overlay
+    internal: true

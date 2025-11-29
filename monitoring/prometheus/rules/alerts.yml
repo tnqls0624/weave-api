@@ -1,0 +1,166 @@
+groups:
+  # ============================================
+  # API Application Alerts
+  # ============================================
+  - name: weave-api
+    interval: 30s
+    rules:
+      # 높은 에러율
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+          / sum(rate(http_server_requests_seconds_count[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+
+      # 느린 응답 시간
+      - alert: SlowResponseTime
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_requests_seconds_bucket[5m])) by (le)
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow response time detected"
+          description: "95th percentile response time is {{ $value | humanizeDuration }}"
+
+      # API 서비스 다운
+      - alert: APIServiceDown
+        expr: up{job="weave-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Weave API is down"
+          description: "API service has been down for more than 1 minute"
+
+      # 높은 메모리 사용
+      - alert: HighMemoryUsage
+        expr: |
+          jvm_memory_used_bytes{area="heap"}
+          / jvm_memory_max_bytes{area="heap"} > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High JVM heap memory usage"
+          description: "JVM heap memory usage is {{ $value | humanizePercentage }}"
+
+      # GC 시간 과다
+      - alert: HighGCTime
+        expr: |
+          rate(jvm_gc_pause_seconds_sum[5m])
+          / rate(jvm_gc_pause_seconds_count[5m]) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High GC pause time"
+          description: "Average GC pause time is {{ $value | humanizeDuration }}"
+
+  # ============================================
+  # Infrastructure Alerts
+  # ============================================
+  - name: infrastructure
+    interval: 30s
+    rules:
+      # MongoDB 다운
+      - alert: MongoDBDown
+        expr: mongodb_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MongoDB is down"
+          description: "MongoDB has been down for more than 1 minute"
+
+      # Redis 다운
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis is down"
+          description: "Redis has been down for more than 1 minute"
+
+      # 디스크 용량 부족
+      - alert: LowDiskSpace
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/"}
+          / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is less than 10% on {{ $labels.instance }}"
+
+      # 컨테이너 재시작
+      - alert: ContainerRestarting
+        expr: |
+          increase(container_restart_count[1h]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container is restarting frequently"
+          description: "Container {{ $labels.name }} has restarted {{ $value }} times in the last hour"
+
+  # ============================================
+  # Traefik Alerts
+  # ============================================
+  - name: traefik
+    interval: 30s
+    rules:
+      # Traefik 다운
+      - alert: TraefikDown
+        expr: up{job="traefik"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Traefik is down"
+          description: "Traefik load balancer has been down for more than 1 minute"
+
+      # 백엔드 서비스 없음
+      - alert: TraefikNoBackend
+        expr: traefik_service_server_up == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Traefik has no backend servers"
+          description: "Service {{ $labels.service }} has no healthy backend servers"
+
+  # ============================================
+  # Backup Alerts
+  # ============================================
+  - name: backup
+    interval: 1h
+    rules:
+      # 백업 오래됨
+      - alert: BackupTooOld
+        expr: (time() - mongodb_backup_timestamp) > 86400
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "MongoDB backup is too old"
+          description: "Last backup was {{ $value | humanizeDuration }} ago"
+
+      # 백업 실패
+      - alert: BackupFailed
+        expr: mongodb_backup_status != 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MongoDB backup failed"
+          description: "Last backup operation failed"

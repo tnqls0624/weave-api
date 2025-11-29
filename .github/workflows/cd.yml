@@ -7,6 +7,15 @@ on:
     types: [completed]
   workflow_dispatch:
     inputs:
+      strategy:
+        description: 'Deployment strategy'
+        required: true
+        default: 'rolling'
+        type: choice
+        options:
+          - rolling
+          - blue-green
+          - canary
       skip_tests:
         description: 'Skip tests (emergency deploy)'
         required: false
@@ -16,6 +25,11 @@ on:
         description: 'Force deploy even if backup check fails'
         required: false
         default: 'false'
+        type: boolean
+      rollback_on_error:
+        description: 'Automatic rollback on error'
+        required: false
+        default: 'true'
         type: boolean
 
 env:
@@ -124,11 +138,21 @@ jobs:
           host: ${{ secrets.PROD_EC2_HOST }}
           username: ${{ secrets.PROD_EC2_USER }}
           key: ${{ secrets.PROD_EC2_SSH_KEY }}
-          source: "scripts/mongodb-backup.sh,scripts/cleanup-logs.sh"
+          source: "scripts/mongodb-backup.sh,scripts/cleanup-logs.sh,scripts/deploy-rolling.sh,scripts/deploy-blue-green.sh,scripts/deploy-canary.sh,scripts/rollback.sh,scripts/health-check.sh"
           target: "/home/ec2-user/"
           strip_components: 0
 
-      - name: Configure cron jobs
+      - name: Copy monitoring configs to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_EC2_HOST }}
+          username: ${{ secrets.PROD_EC2_USER }}
+          key: ${{ secrets.PROD_EC2_SSH_KEY }}
+          source: "monitoring/"
+          target: "/home/ec2-user/"
+          strip_components: 0
+
+      - name: Configure scripts and cron jobs
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PROD_EC2_HOST }}
@@ -136,8 +160,7 @@ jobs:
           key: ${{ secrets.PROD_EC2_SSH_KEY }}
           script: |
             # 스크립트 권한 설정
-            chmod +x /home/ec2-user/scripts/mongodb-backup.sh
-            chmod +x /home/ec2-user/scripts/cleanup-logs.sh
+            chmod +x /home/ec2-user/scripts/*.sh
 
             # 환경변수 설정 (cron에서 사용)
             echo "MONGODB_ROOT_PASSWORD=${{ secrets.PROD_MONGODB_ROOT_PASSWORD }}" > /home/ec2-user/scripts/.env
@@ -157,6 +180,17 @@ jobs:
 
             echo "✅ Cron jobs configured:"
             crontab -l
+
+            # AlertManager Slack Webhook URL 설정
+            if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+              sed -i "s|https://hooks.slack.com/services/YOUR/WEBHOOK/URL|${{ secrets.SLACK_WEBHOOK_URL }}|g" \
+                /home/ec2-user/monitoring/alertmanager/alertmanager.yml
+              echo "✅ AlertManager Slack webhook configured"
+            fi
+
+            echo ""
+            echo "✅ Monitoring configs deployed to /home/ec2-user/monitoring/"
+            ls -la /home/ec2-user/monitoring/
 
   # ============================================
   # Build & Push Docker Image
