@@ -337,6 +337,10 @@ jobs:
             # Docker Stack 배포
             docker stack deploy -c docker-compose.yml weave --with-registry-auth --prune
 
+            # API 서비스 강제 업데이트 (이미지 변경 적용)
+            echo "Forcing API service update with new image..."
+            docker service update --image $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --force weave_api
+
             # 배포 대기
             echo "Waiting for deployment to stabilize..."
             sleep 30
