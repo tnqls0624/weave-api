@@ -260,7 +260,7 @@ services:
           memory: 1024M
         reservations:
           cpus: '0.5'
-          memory: 768M
+          memory: 512M
       labels:
         - "traefik.enable=true"
         # CORS 미들웨어 정의
