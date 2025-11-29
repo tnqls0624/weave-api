@@ -38,7 +38,7 @@ public class SecurityConfig {
         .formLogin(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)
         .headers(headers -> headers
-            .frameOptions(frame -> frame.sameOrigin()) // WebSocket 연결을 위해 필요
+            .frameOptions(frame -> frame.disable()) // WebView에서 로드 허용
         )
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(

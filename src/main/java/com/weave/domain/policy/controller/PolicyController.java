@@ -2,6 +2,7 @@ package com.weave.domain.policy.controller;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,9 @@ public class PolicyController {
     public ResponseEntity<String> getPrivacyPolicy() throws IOException {
         Resource resource = new ClassPathResource("static/privacy-policy.html");
         String html = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        return ResponseEntity.ok(html);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.X_FRAME_OPTIONS, "ALLOWALL")
+                .header("Content-Security-Policy", "frame-ancestors *")
+                .body(html);
     }
 }
