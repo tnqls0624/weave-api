@@ -210,6 +210,9 @@ services:
       - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
       - MANAGEMENT_METRICS_TAGS_APPLICATION=weave-api
 
+      # Loki (로그 수집 - 모니터링 서버)
+      - LOKI_URL=${LOKI_URL:-http://172.31.28.196:3100}
+
     volumes:
       - jwt_keys:/app/keys
       - /home/ec2-user/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json:/app/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json:ro
