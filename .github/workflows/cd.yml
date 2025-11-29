@@ -368,19 +368,32 @@ jobs:
           script: |
             echo "=== Health Check ==="
 
-            # API 헬스체크
-            for i in {1..5}; do
-              HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/actuator/health || echo "000")
+            # API 컨테이너 IP 가져오기
+            API_CONTAINER=$(docker ps --filter "name=weave_api" --format "{{.ID}}" | head -1)
+
+            if [ -z "$API_CONTAINER" ]; then
+              echo "❌ API container not found"
+              exit 1
+            fi
+
+            # Traefik 경유 헬스체크 (actuator 라우터는 CORS 미들웨어 없음)
+            for i in {1..10}; do
+              HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/actuator/health 2>/dev/null || echo "000")
               if [ "$HEALTH" == "200" ]; then
                 echo "✅ Health check passed (attempt $i)"
                 break
               else
                 echo "⚠️ Health check failed (attempt $i): HTTP $HEALTH"
-                if [ $i -eq 5 ]; then
-                  echo "❌ Health check failed after 5 attempts"
+                # 컨테이너 상태 확인
+                echo "Container status:"
+                docker ps --filter "name=weave_api" --format "table {{.ID}}\t{{.Status}}\t{{.Ports}}"
+                if [ $i -eq 10 ]; then
+                  echo "❌ Health check failed after 10 attempts"
+                  echo "=== Container Logs ==="
+                  docker logs --tail 50 $API_CONTAINER 2>&1 || true
                   exit 1
                 fi
-                sleep 10
+                sleep 15
               fi
             done
 
