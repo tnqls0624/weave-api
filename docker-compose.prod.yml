@@ -210,8 +210,8 @@ services:
       - MANAGEMENT_METRICS_EXPORT_PROMETHEUS_ENABLED=true
       - MANAGEMENT_METRICS_TAGS_APPLICATION=weave-api
 
-      # Loki (로그 수집 - 모니터링 서버)
-      - LOKI_URL=${LOKI_URL:-http://172.31.28.196:3100}
+      # Loki (로그 수집 - 모니터링 서버 퍼블릭 IP)
+      - LOKI_URL=${LOKI_URL:-http://43.201.42.89:3100}
 
     volumes:
       - jwt_keys:/app/keys
