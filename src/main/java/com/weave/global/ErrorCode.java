@@ -35,6 +35,9 @@ public enum ErrorCode {
   SCHEDULE_NOT_FOUND(HttpStatus.BAD_REQUEST, "C004", "Schedule not found"),
   WORKSPACE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "C005", "Workspace access denied"),
   DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "C006", "Duplicate resource"),
+  INVALID_INVITE_CODE(HttpStatus.BAD_REQUEST, "C007", "Invalid invite code"),
+  CANNOT_INVITE_SELF(HttpStatus.BAD_REQUEST, "C008", "Cannot use your own invite code"),
+  ALREADY_JOINED_WORKSPACE(HttpStatus.CONFLICT, "C009", "Already joined this workspace"),
   ;
 
 

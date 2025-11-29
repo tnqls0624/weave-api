@@ -106,6 +106,55 @@ public class WorkspaceService {
     workspaceRepository.deleteById(new ObjectId(id));
   }
 
+  /**
+   * 초대코드로 워크스페이스에 참여
+   * - 초대코드로 대상 사용자 찾기
+   * - 대상 사용자가 속한 워크스페이스 찾기
+   * - 현재 사용자를 해당 워크스페이스에 추가
+   */
+  public WorkspaceResponseDto joinByInviteCode(String inviteCode, String email) {
+    // 현재 사용자 조회
+    User currentUser = userRepository.findByEmail(email)
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+    // 초대코드로 대상 사용자 찾기
+    User targetUser = userRepository.findByInviteCode(inviteCode)
+        .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INVITE_CODE));
+
+    // 자기 자신의 초대코드인 경우
+    if (currentUser.getId().equals(targetUser.getId())) {
+      throw new BusinessException(ErrorCode.CANNOT_INVITE_SELF);
+    }
+
+    // 대상 사용자가 master인 워크스페이스 찾기
+    List<Workspace> targetWorkspaces = workspaceRepository.findByUsersContaining(targetUser.getId());
+    Workspace workspace = targetWorkspaces.stream()
+        .filter(ws -> ws.getMaster().equals(targetUser.getId()))
+        .findFirst()
+        .orElse(null);
+
+    // 워크스페이스가 없으면 새로 생성
+    if (workspace == null) {
+      workspace = workspaceRepository.save(
+          Workspace.builder()
+              .master(targetUser.getId())
+              .users(Lists.newArrayList(targetUser.getId(), currentUser.getId()))
+              .build()
+      );
+    } else {
+      // 이미 참여한 워크스페이스인지 확인
+      if (workspace.getUsers().contains(currentUser.getId())) {
+        throw new BusinessException(ErrorCode.ALREADY_JOINED_WORKSPACE);
+      }
+      // 워크스페이스에 현재 사용자 추가
+      workspace.getUsers().add(currentUser.getId());
+      workspaceRepository.save(workspace);
+    }
+
+    Map<ObjectId, User> uMap = loadUsersForWorkspace(workspace);
+    return toDto(workspace, uMap);
+  }
+
   public WorkspaceResponseDto updateParticipantColors(String id,
       Map<String, String> participantColors) {
     Workspace workspace = workspaceRepository.findById(new ObjectId(id))

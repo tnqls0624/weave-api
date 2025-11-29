@@ -107,4 +107,15 @@ public class WorkspaceController {
     return ApiResponse.ok(workspaceService.findWorkspaceScheduleFeed(id, userDetails));
   }
 
+  // 초대코드로 워크스페이스 참여
+  @SecurityRequirement(name = "JWT")
+  @Tag(name = "WORKSPACE")
+  @Operation(summary = "초대코드로 워크스페이스 참여", description = "다른 사용자의 초대코드를 입력하여 해당 사용자의 워크스페이스에 참여합니다.")
+  @PostMapping("/join/{inviteCode}")
+  public ApiResponse<WorkspaceResponseDto> joinByInviteCode(
+      @PathVariable("inviteCode") String inviteCode,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    return ApiResponse.ok(workspaceService.joinByInviteCode(inviteCode, userDetails.getUsername()));
+  }
+
 }
