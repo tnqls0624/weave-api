@@ -16,6 +16,8 @@ import com.weave.domain.auth.repository.AuthRepository;
 import com.weave.domain.auth.repository.RefreshTokenRepository;
 import com.weave.domain.user.entity.LoginType;
 import com.weave.domain.user.entity.User;
+import com.weave.domain.workspace.entity.Workspace;
+import com.weave.domain.workspace.repository.WorkspaceRepository;
 import com.weave.global.BusinessException;
 import com.weave.global.ErrorCode;
 import java.math.BigInteger;
@@ -26,6 +28,7 @@ import java.security.spec.RSAPublicKeySpec;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Base64;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -47,6 +50,7 @@ public class AuthService {
   private final WebClient webClient;
   private final RefreshTokenRepository refreshTokenRepository;
   private final ObjectMapper objectMapper;
+  private final WorkspaceRepository workspaceRepository;
 
   @Value("${app.test-account.email:test@weave.com}")
   private String testAccountEmail;
@@ -158,8 +162,9 @@ public class AuthService {
     }
 
     return authRepository.findByEmail(email)
-        .orElseGet(() ->
-            authRepository.save(
+        .orElseGet(() -> {
+            // 신규 사용자 생성
+            User newUser = authRepository.save(
                 User.builder()
                     .email(email)
                     .name(nickname)
@@ -167,8 +172,26 @@ public class AuthService {
                     .inviteCode(inviteCode)
                     .pushEnabled(true)
                     .build()
-            )
-        );
+            );
+
+            // 신규 사용자를 위한 기본 워크스페이스 생성
+            createDefaultWorkspace(newUser);
+            log.info("Created default workspace for new user: {}", newUser.getEmail());
+
+            return newUser;
+        });
+  }
+
+  /**
+   * 신규 사용자를 위한 기본 워크스페이스 생성
+   */
+  private void createDefaultWorkspace(User user) {
+    Workspace workspace = Workspace.builder()
+        .title(user.getName() + "의 캘린더")
+        .master(user.getId())
+        .users(List.of(user.getId()))
+        .build();
+    workspaceRepository.save(workspace);
   }
 
   /**
@@ -289,8 +312,9 @@ public class AuthService {
 
       String finalEmail = email;
       return authRepository.findByEmail(email)
-          .orElseGet(() ->
-              authRepository.save(
+          .orElseGet(() -> {
+              // 신규 사용자 생성
+              User newUser = authRepository.save(
                   User.builder()
                       .email(finalEmail)
                       .name("Apple User")
@@ -298,8 +322,14 @@ public class AuthService {
                       .inviteCode(inviteCode)
                       .pushEnabled(true)
                       .build()
-              )
-          );
+              );
+
+              // 신규 사용자를 위한 기본 워크스페이스 생성
+              createDefaultWorkspace(newUser);
+              log.info("Created default workspace for new user: {}", newUser.getEmail());
+
+              return newUser;
+          });
     } catch (BusinessException e) {
       throw e;
     } catch (Exception e) {
@@ -379,8 +409,9 @@ public class AuthService {
 
     // 테스트 사용자 조회 또는 생성
     User user = authRepository.findByEmail(testAccountEmail)
-        .orElseGet(() ->
-            authRepository.save(
+        .orElseGet(() -> {
+            // 신규 사용자 생성
+            User newUser = authRepository.save(
                 User.builder()
                     .email(testAccountEmail)
                     .name("Test User")
@@ -388,8 +419,14 @@ public class AuthService {
                     .inviteCode(inviteCode)
                     .pushEnabled(false)
                     .build()
-            )
-        );
+            );
+
+            // 신규 사용자를 위한 기본 워크스페이스 생성
+            createDefaultWorkspace(newUser);
+            log.info("Created default workspace for test user: {}", newUser.getEmail());
+
+            return newUser;
+        });
 
     String accessToken = jwtTokenProvider.createToken(user.getEmail());
     String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
