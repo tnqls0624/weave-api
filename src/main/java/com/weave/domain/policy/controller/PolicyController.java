@@ -25,4 +25,14 @@ public class PolicyController {
                 .header("Content-Security-Policy", "frame-ancestors *")
                 .body(html);
     }
+
+    @GetMapping(value = "/support", produces = MediaType.TEXT_HTML_VALUE)
+    public ResponseEntity<String> getSupport() throws IOException {
+        Resource resource = new ClassPathResource("static/support.html");
+        String html = new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.X_FRAME_OPTIONS, "ALLOWALL")
+                .header("Content-Security-Policy", "frame-ancestors *")
+                .body(html);
+    }
 }

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고객 지원 - 모두의캘린더</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background-color: #fff;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+            border-bottom: 2px solid #007AFF;
+            padding-bottom: 10px;
+        }
+        h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #1a1a1a;
+        }
+        p {
+            margin-bottom: 15px;
+            font-size: 15px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .highlight {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
+        }
+        .contact-card {
+            background-color: #007AFF;
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .contact-card a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .faq-item {
+            background-color: #f8f9fa;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .faq-question {
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+        .faq-answer {
+            color: #666;
+            font-size: 14px;
+        }
+        .app-info {
+            text-align: center;
+            padding: 30px 0;
+        }
+        .app-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: #007AFF;
+            margin-bottom: 10px;
+        }
+        .app-tagline {
+            color: #666;
+            font-size: 16px;
+        }
+        ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        li {
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #1a1a1a;
+                color: #e0e0e0;
+            }
+            h1, h2, .faq-question {
+                color: #fff;
+            }
+            .highlight, .faq-item {
+                background-color: #2a2a2a;
+            }
+            .faq-answer {
+                color: #999;
+            }
+            .app-tagline {
+                color: #999;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-info">
+        <div class="app-name">모두의캘린더</div>
+        <p class="app-tagline">함께하는 일정 관리의 시작</p>
+    </div>
+
+    <h1>고객 지원</h1>
+
+    <div class="section">
+        <p>모두의캘린더를 이용해 주셔서 감사합니다. 서비스 이용 중 궁금한 점이나 문제가 있으시면 아래 방법으로 문의해 주세요.</p>
+
+        <div class="contact-card">
+            <p>이메일 문의</p>
+            <a href="mailto:support@weave.com">support@weave.com</a>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>자주 묻는 질문 (FAQ)</h2>
+
+        <div class="faq-item">
+            <p class="faq-question">Q. 워크스페이스는 어떻게 만드나요?</p>
+            <p class="faq-answer">앱 좌측 상단 메뉴에서 '새 워크스페이스 만들기'를 선택하세요. 워크스페이스를 만든 후 초대 코드를 공유하여 멤버를 초대할 수 있습니다.</p>
+        </div>
+
+        <div class="faq-item">
+            <p class="faq-question">Q. 다른 사람을 워크스페이스에 초대하려면?</p>
+            <p class="faq-answer">워크스페이스 설정에서 '초대 코드'를 확인하고, 이 코드를 초대하려는 사람에게 공유하세요. 상대방이 코드를 입력하면 워크스페이스에 참여할 수 있습니다.</p>
+        </div>
+
+        <div class="faq-item">
+            <p class="faq-question">Q. 위치 공유는 어떻게 사용하나요?</p>
+            <p class="faq-answer">설정 > 알림 및 위치 > 위치 공유를 활성화하세요. 위치 공유가 활성화되면 같은 워크스페이스 멤버들과 실시간으로 위치를 공유할 수 있습니다.</p>
+        </div>
+
+        <div class="faq-item">
+            <p class="faq-question">Q. 일정 알림은 어떻게 설정하나요?</p>
+            <p class="faq-answer">설정 > 알림 및 위치에서 푸시 알림을 활성화하세요. 일정 시작 전에 알림을 받을 수 있습니다.</p>
+        </div>
+
+        <div class="faq-item">
+            <p class="faq-question">Q. 회원 탈퇴는 어떻게 하나요?</p>
+            <p class="faq-answer">설정 페이지 하단의 '회원 탈퇴' 버튼을 통해 탈퇴할 수 있습니다. 탈퇴 시 모든 데이터가 삭제되며 복구할 수 없습니다.</p>
+        </div>
+
+        <div class="faq-item">
+            <p class="faq-question">Q. 프로필 사진을 변경하고 싶어요.</p>
+            <p class="faq-answer">설정 > 프로필 편집에서 프로필 사진을 탭하면 카메라 또는 갤러리에서 새 사진을 선택할 수 있습니다.</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>앱 정보</h2>
+        <div class="highlight">
+            <ul>
+                <li><strong>앱 이름:</strong> 모두의캘린더</li>
+                <li><strong>현재 버전:</strong> 1.0.0</li>
+                <li><strong>개발사:</strong> Weave</li>
+                <li><strong>지원 이메일:</strong> support@weave.com</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>문의 시 포함해 주세요</h2>
+        <p>빠른 문제 해결을 위해 문의 시 아래 정보를 함께 보내주시면 감사하겠습니다.</p>
+        <ul>
+            <li>사용 중인 기기 (예: iPhone 15, Galaxy S24)</li>
+            <li>iOS/Android 버전</li>
+            <li>앱 버전 (설정 > 앱 정보에서 확인)</li>
+            <li>문제 상황에 대한 자세한 설명</li>
+            <li>문제가 발생한 화면 스크린샷 (가능한 경우)</li>
+        </ul>
+    </div>
+
+    <div class="section">
+        <h2>운영 시간</h2>
+        <p>문의에 대한 답변은 평일 기준 24시간 이내에 드리고 있습니다.</p>
+        <p>주말 및 공휴일에 접수된 문의는 다음 영업일에 순차적으로 답변드립니다.</p>
+    </div>
+</body>
+</html>
