@@ -44,13 +44,14 @@ public class SecurityConfig {
             .requestMatchers(
                 "/",
                 "/health",
+                "/actuator/**",
                 "/auth/**",
                 "/user/invite/**",
                 "/swagger/**",
                 "/v3/api-docs/**",
                 "/swagger-ui/**",
                 "/policy/**",
-                "/api/ws/**").permitAll() // 로그인, 회원가입, 헬스체크, WebSocket, 개인정보처리방침 허용
+                "/api/ws/**").permitAll() // 로그인, 회원가입, 헬스체크, Actuator, WebSocket, 개인정보처리방침 허용
             .anyRequest().authenticated()
         ).addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
             UsernamePasswordAuthenticationFilter.class);
