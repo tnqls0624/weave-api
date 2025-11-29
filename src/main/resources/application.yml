@@ -103,7 +103,9 @@ management:
         include: health,info,metrics,prometheus,threaddump,heapdump
   endpoint:
     health:
-      show-details: when_authorized
+      show-details: always
+    prometheus:
+      enabled: true
   metrics:
     tags:
       application: ${spring.application.name}
