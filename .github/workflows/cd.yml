@@ -1,0 +1,447 @@
+name: CD - Deploy to Production
+
+on:
+  workflow_run:
+    workflows: ["CI - Build, Test & Quality"]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests (emergency deploy)'
+        required: false
+        default: 'false'
+        type: boolean
+      force_deploy:
+        description: 'Force deploy even if backup check fails'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com
+  ECR_REPOSITORY: weave-api/prod
+
+jobs:
+  # ============================================
+  # Pre-flight Checks
+  # ============================================
+  preflight:
+    name: Pre-flight Checks
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      backup_status: ${{ steps.backup-check.outputs.status }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check deployment conditions
+        id: check
+        run: |
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+          echo "✅ Pre-flight checks passed"
+
+      - name: Verify backup status on EC2
+        id: backup-check
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_EC2_HOST }}
+          username: ${{ secrets.PROD_EC2_USER }}
+          key: ${{ secrets.PROD_EC2_SSH_KEY }}
+          script: |
+            echo "=== Backup Status Check ==="
+
+            # 백업 디렉토리 확인
+            BACKUP_DIR="/home/ec2-user/backups/mongodb"
+
+            if [ -d "$BACKUP_DIR" ]; then
+              LATEST_BACKUP=$(ls -t $BACKUP_DIR/*.tar.gz 2>/dev/null | head -1)
+              if [ -n "$LATEST_BACKUP" ]; then
+                BACKUP_AGE=$((($(date +%s) - $(stat -c %Y "$LATEST_BACKUP")) / 86400))
+                BACKUP_SIZE=$(du -h "$LATEST_BACKUP" | cut -f1)
+                echo "✅ Latest backup: $(basename $LATEST_BACKUP)"
+                echo "   Age: ${BACKUP_AGE} days"
+                echo "   Size: ${BACKUP_SIZE}"
+
+                if [ $BACKUP_AGE -gt 1 ]; then
+                  echo "⚠️ WARNING: Backup is more than 1 day old!"
+                fi
+              else
+                echo "⚠️ WARNING: No backup files found"
+              fi
+            else
+              echo "⚠️ WARNING: Backup directory does not exist"
+            fi
+
+            # Cron 상태 확인
+            echo ""
+            echo "=== Cron Status ==="
+            if crontab -l 2>/dev/null | grep -q "mongodb-backup.sh"; then
+              echo "✅ MongoDB backup cron is configured"
+            else
+              echo "⚠️ WARNING: MongoDB backup cron not found"
+            fi
+
+            if crontab -l 2>/dev/null | grep -q "cleanup-logs.sh"; then
+              echo "✅ Log cleanup cron is configured"
+            else
+              echo "⚠️ WARNING: Log cleanup cron not found"
+            fi
+        continue-on-error: true
+
+  # ============================================
+  # Setup Infrastructure (Cron & Backup)
+  # ============================================
+  setup-infra:
+    name: Setup Infrastructure
+    runs-on: ubuntu-latest
+    needs: preflight
+    if: needs.preflight.outputs.should_deploy == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Upload and setup backup scripts
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_EC2_HOST }}
+          username: ${{ secrets.PROD_EC2_USER }}
+          key: ${{ secrets.PROD_EC2_SSH_KEY }}
+          script: |
+            # 디렉토리 생성
+            mkdir -p /home/ec2-user/scripts
+            mkdir -p /home/ec2-user/backups/mongodb
+            mkdir -p /home/ec2-user/logs
+
+      - name: Copy backup scripts to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_EC2_HOST }}
+          username: ${{ secrets.PROD_EC2_USER }}
+          key: ${{ secrets.PROD_EC2_SSH_KEY }}
+          source: "scripts/mongodb-backup.sh,scripts/cleanup-logs.sh"
+          target: "/home/ec2-user/"
+          strip_components: 0
+
+      - name: Configure cron jobs
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_EC2_HOST }}
+          username: ${{ secrets.PROD_EC2_USER }}
+          key: ${{ secrets.PROD_EC2_SSH_KEY }}
+          script: |
+            # 스크립트 권한 설정
+            chmod +x /home/ec2-user/scripts/mongodb-backup.sh
+            chmod +x /home/ec2-user/scripts/cleanup-logs.sh
+
+            # 환경변수 설정 (cron에서 사용)
+            echo "MONGODB_ROOT_PASSWORD=${{ secrets.PROD_MONGODB_ROOT_PASSWORD }}" > /home/ec2-user/scripts/.env
+            chmod 600 /home/ec2-user/scripts/.env
+
+            # Cron 설정 (기존 항목 제거 후 추가)
+            (crontab -l 2>/dev/null | grep -v "mongodb-backup.sh" | grep -v "cleanup-logs.sh") > /tmp/crontab_new || true
+
+            # MongoDB 백업 (매일 새벽 3시)
+            echo "0 3 * * * source /home/ec2-user/scripts/.env && /home/ec2-user/scripts/mongodb-backup.sh >> /home/ec2-user/logs/cron-backup.log 2>&1" >> /tmp/crontab_new
+
+            # 로그 정리 (매일 새벽 4시)
+            echo "0 4 * * * /home/ec2-user/scripts/cleanup-logs.sh >> /home/ec2-user/logs/cron-cleanup.log 2>&1" >> /tmp/crontab_new
+
+            crontab /tmp/crontab_new
+            rm /tmp/crontab_new
+
+            echo "✅ Cron jobs configured:"
+            crontab -l
+
+  # ============================================
+  # Build & Push Docker Image
+  # ============================================
+  build-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [preflight, setup-infra]
+    outputs:
+      image_tag: ${{ steps.build.outputs.image_tag }}
+      image_digest: ${{ steps.build.outputs.image_digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+            ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+
+      - name: Output image info
+        run: |
+          echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+          echo "image_digest=${{ steps.build.outputs.digest }}" >> $GITHUB_OUTPUT
+          echo "✅ Image pushed: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+
+      - name: Scan Docker image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
+  # ============================================
+  # Deploy to Production
+  # ============================================
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-push]
+    environment:
+      name: production
+      url: https://api.weave.app
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Prepare deployment files
+        run: |
+          mkdir -p deploy
+          cp docker-compose.prod.yml deploy/docker-compose.yml
+
+      - name: Upload deployment files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_EC2_HOST }}
+          username: ${{ secrets.PROD_EC2_USER }}
+          key: ${{ secrets.PROD_EC2_SSH_KEY }}
+          source: "deploy/docker-compose.yml"
+          target: "/home/ec2-user/deployment/"
+          strip_components: 1
+
+      - name: Deploy application
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_EC2_HOST }}
+          username: ${{ secrets.PROD_EC2_USER }}
+          key: ${{ secrets.PROD_EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "=== Deployment Started ==="
+            echo "Image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}"
+
+            cd /home/ec2-user/deployment
+
+            # 환경변수 설정
+            export ECR_REGISTRY="${{ env.ECR_REGISTRY }}"
+            export ECR_REPOSITORY="${{ env.ECR_REPOSITORY }}"
+            export IMAGE_TAG="${{ github.sha }}"
+            export MONGODB_URI="${{ secrets.PROD_SPRING_DATA_MONGODB_URI }}"
+            export MONGODB_ROOT_PASSWORD="${{ secrets.PROD_MONGODB_ROOT_PASSWORD }}"
+            export REDIS_PASSWORD="${{ secrets.PROD_REDIS_PASSWORD }}"
+            export JWT_EXPIRATION="${{ secrets.PROD_JWT_EXPIRATION }}"
+            export JWT_REFRESH_EXPIRATION="${{ secrets.PROD_JWT_REFRESH_EXPIRATION }}"
+            export JWT_PRIVATE_KEY_PATH="${{ secrets.PROD_JWT_PRIVATE_KEY_PATH }}"
+            export JWT_PUBLIC_KEY_PATH="${{ secrets.PROD_JWT_PUBLIC_KEY_PATH }}"
+            export HOLIDAY_API_KEY="${{ secrets.PROD_HOLIDAY_API_KEY }}"
+            export HOLIDAY_API_BASE_URL="${{ secrets.PROD_HOLIDAY_API_BASE_URL }}"
+            export AWS_REGION="${{ secrets.PROD_AWS_REGION }}"
+            export AWS_S3_BUCKET="${{ secrets.PROD_AWS_S3_BUCKET }}"
+            export AWS_S3_PUBLIC_BASE_URL="${{ secrets.PROD_AWS_S3_PUBLIC_BASE_URL }}"
+            export AWS_S3_UPLOAD_PREFIX="${{ secrets.PROD_AWS_S3_UPLOAD_PREFIX }}"
+            export AWS_ACCESS_KEY_ID="${{ secrets.PROD_AWS_ACCESS_KEY_ID }}"
+            export AWS_SECRET_ACCESS_KEY="${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}"
+            export FIREBASE_CONFIG_PATH="/app/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json"
+
+            # ECR 로그인
+            aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+            # 새 이미지 Pull
+            docker pull $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+            # 배포 전 현재 서비스 상태 저장 (롤백용)
+            docker service inspect weave_api --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' > /tmp/previous_image.txt 2>/dev/null || echo "none"
+
+            # Docker Stack 배포
+            docker stack deploy -c docker-compose.yml weave --with-registry-auth --prune
+
+            # 배포 대기
+            echo "Waiting for deployment to stabilize..."
+            sleep 30
+
+            echo "=== Service Status ==="
+            docker service ls
+
+            echo "=== API Service Status ==="
+            docker service ps weave_api --format "table {{.Name}}\t{{.CurrentState}}\t{{.Error}}" | head -5
+
+  # ============================================
+  # Health Check & Verification
+  # ============================================
+  verify:
+    name: Verify Deployment
+    runs-on: ubuntu-latest
+    needs: deploy
+
+    steps:
+      - name: Wait for service startup
+        run: sleep 60
+
+      - name: Health check
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_EC2_HOST }}
+          username: ${{ secrets.PROD_EC2_USER }}
+          key: ${{ secrets.PROD_EC2_SSH_KEY }}
+          script: |
+            echo "=== Health Check ==="
+
+            # API 헬스체크
+            for i in {1..5}; do
+              HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/actuator/health || echo "000")
+              if [ "$HEALTH" == "200" ]; then
+                echo "✅ Health check passed (attempt $i)"
+                break
+              else
+                echo "⚠️ Health check failed (attempt $i): HTTP $HEALTH"
+                if [ $i -eq 5 ]; then
+                  echo "❌ Health check failed after 5 attempts"
+                  exit 1
+                fi
+                sleep 10
+              fi
+            done
+
+            # 서비스 상태 확인
+            echo ""
+            echo "=== Final Service Status ==="
+            docker service ls
+
+            echo ""
+            echo "=== Container Logs (last 20 lines) ==="
+            API_CONTAINER=$(docker ps --filter "name=weave_api" --format "{{.ID}}" | head -1)
+            if [ -n "$API_CONTAINER" ]; then
+              docker logs --tail 20 $API_CONTAINER 2>&1 || true
+            fi
+
+            echo ""
+            echo "✅ Deployment verification complete"
+
+  # ============================================
+  # Rollback (Manual Trigger)
+  # ============================================
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    needs: verify
+    if: failure()
+
+    steps:
+      - name: Rollback to previous version
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_EC2_HOST }}
+          username: ${{ secrets.PROD_EC2_USER }}
+          key: ${{ secrets.PROD_EC2_SSH_KEY }}
+          script: |
+            echo "=== Rolling back deployment ==="
+
+            PREVIOUS_IMAGE=$(cat /tmp/previous_image.txt 2>/dev/null || echo "none")
+
+            if [ "$PREVIOUS_IMAGE" != "none" ] && [ -n "$PREVIOUS_IMAGE" ]; then
+              echo "Rolling back to: $PREVIOUS_IMAGE"
+              docker service update --image $PREVIOUS_IMAGE weave_api
+              echo "✅ Rollback completed"
+            else
+              echo "⚠️ No previous image found, cannot rollback"
+            fi
+
+  # ============================================
+  # Notify on Completion
+  # ============================================
+  notify:
+    name: Send Notification
+    runs-on: ubuntu-latest
+    needs: [verify]
+    if: always()
+
+    steps:
+      - name: Notify Slack on success
+        if: needs.verify.result == 'success'
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "✅ Deployment Successful",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ *Weave API Deployment Successful*\n*Commit:* `${{ github.sha }}`\n*Branch:* `${{ github.ref_name }}`\n*Actor:* ${{ github.actor }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+      - name: Notify Slack on failure
+        if: needs.verify.result == 'failure'
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "❌ Deployment Failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "❌ *Weave API Deployment Failed*\n*Commit:* `${{ github.sha }}`\n*Branch:* `${{ github.ref_name }}`\n*Actor:* ${{ github.actor }}\n*Details:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
