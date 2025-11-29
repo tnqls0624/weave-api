@@ -10,6 +10,12 @@ env:
   JAVA_VERSION: '21'
   GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.caching=true'
 
+# 워크플로우 전체 권한 설정
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   # ============================================
   # Stage 1: Build & Unit Test
