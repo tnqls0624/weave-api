@@ -42,17 +42,18 @@ public class SecurityConfig {
             .frameOptions(frame -> frame.disable()) // WebView에서 로드 허용
         )
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers(new AntPathRequestMatcher("/actuator/**")).permitAll()
             .requestMatchers(
-                "/",
-                "/health",
-                "/auth/**",
-                "/user/invite/**",
-                "/swagger/**",
-                "/v3/api-docs/**",
-                "/swagger-ui/**",
-                "/policy/**",
-                "/api/ws/**").permitAll() // 로그인, 회원가입, 헬스체크, Actuator, WebSocket, 개인정보처리방침 허용
+                new AntPathRequestMatcher("/actuator/**"),
+                new AntPathRequestMatcher("/"),
+                new AntPathRequestMatcher("/health"),
+                new AntPathRequestMatcher("/auth/**"),
+                new AntPathRequestMatcher("/user/invite/**"),
+                new AntPathRequestMatcher("/swagger/**"),
+                new AntPathRequestMatcher("/v3/api-docs/**"),
+                new AntPathRequestMatcher("/swagger-ui/**"),
+                new AntPathRequestMatcher("/policy/**"),
+                new AntPathRequestMatcher("/api/ws/**")
+            ).permitAll()
             .anyRequest().authenticated()
         ).addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService),
             UsernamePasswordAuthenticationFilter.class);
