@@ -35,4 +35,9 @@ public interface LocationRepository extends MongoRepository<Location, ObjectId> 
    */
   Optional<Location> findFirstByWorkspaceIdAndUserIdOrderByTimestampDesc(
       ObjectId workspaceId, ObjectId userId);
+
+  /**
+   * 특정 사용자의 모든 위치 정보 삭제 (회원 탈퇴용)
+   */
+  void deleteByUserId(ObjectId userId);
 }

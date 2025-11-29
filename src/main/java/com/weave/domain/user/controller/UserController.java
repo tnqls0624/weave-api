@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -63,5 +64,16 @@ public class UserController {
   public ApiResponse<UserResponseDto> update(@Valid @RequestBody UpdateUserRequestDto dto,
       @AuthenticationPrincipal UserDetails userDetails) {
     return ApiResponse.ok(userService.update(dto, userDetails.getUsername()));
+  }
+
+  // 회원 탈퇴
+  @SecurityRequirement(name = "JWT")
+  @Tag(name = "USER")
+  @Operation(summary = "회원 탈퇴", description = "계정과 관련된 모든 데이터를 삭제합니다.")
+  @DeleteMapping("/me")
+  public ApiResponse<Void> deleteAccount(
+      @AuthenticationPrincipal UserDetails userDetails) {
+    userService.deleteByEmail(userDetails.getUsername());
+    return ApiResponse.ok(null);
   }
 }
