@@ -1,0 +1,125 @@
+{
+  "uid": "weave-containers",
+  "title": "🐳 Containers",
+  "tags": ["containers", "docker"],
+  "timezone": "Asia/Seoul",
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "templating": {
+    "list": [
+      {
+        "name": "container",
+        "type": "query",
+        "label": "Container",
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "query": "label_values(container_cpu_usage_seconds_total{name=~\".+\"}, name)",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".+"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "🟢 컨테이너 상태",
+      "type": "table",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "name" }, "properties": [{ "id": "custom.width", "value": 250 }, { "id": "displayName", "value": "Container" }] },
+          { "matcher": { "id": "byName", "options": "Value #CPU" }, "properties": [{ "id": "unit", "value": "percentunit" }, { "id": "displayName", "value": "CPU %" }, { "id": "custom.width", "value": 100 }] },
+          { "matcher": { "id": "byName", "options": "Value #Memory" }, "properties": [{ "id": "unit", "value": "bytes" }, { "id": "displayName", "value": "Memory" }, { "id": "custom.width", "value": 120 }] },
+          { "matcher": { "id": "byName", "options": "Value #MemLimit" }, "properties": [{ "id": "unit", "value": "bytes" }, { "id": "displayName", "value": "Mem Limit" }, { "id": "custom.width", "value": 120 }] },
+          { "matcher": { "id": "byName", "options": "Value #MemPct" }, "properties": [{ "id": "unit", "value": "percentunit" }, { "id": "displayName", "value": "Mem %" }, { "id": "custom.width", "value": 100 }, { "id": "thresholds", "value": { "mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.7}, {"color": "red", "value": 0.9}] } }, { "id": "custom.cellOptions", "value": { "type": "color-background" } }] },
+          { "matcher": { "id": "byName", "options": "Value #NetIn" }, "properties": [{ "id": "unit", "value": "Bps" }, { "id": "displayName", "value": "Net In" }, { "id": "custom.width", "value": 100 }] },
+          { "matcher": { "id": "byName", "options": "Value #NetOut" }, "properties": [{ "id": "unit", "value": "Bps" }, { "id": "displayName", "value": "Net Out" }, { "id": "custom.width", "value": 100 }] }
+        ]
+      },
+      "options": { "sortBy": [{ "displayName": "Memory", "desc": true }] },
+      "transformations": [
+        { "id": "merge" },
+        { "id": "filterFieldsByName", "options": { "include": { "pattern": "name|Value.*" } } }
+      ],
+      "targets": [
+        { "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name=~\".+\"}[5m]))", "legendFormat": "{{name}}", "refId": "CPU", "format": "table", "instant": true },
+        { "expr": "sum by (name) (container_memory_usage_bytes{name=~\".+\"})", "legendFormat": "{{name}}", "refId": "Memory", "format": "table", "instant": true },
+        { "expr": "sum by (name) (container_spec_memory_limit_bytes{name=~\".+\"})", "legendFormat": "{{name}}", "refId": "MemLimit", "format": "table", "instant": true },
+        { "expr": "sum by (name) (container_memory_usage_bytes{name=~\".+\"}) / sum by (name) (container_spec_memory_limit_bytes{name=~\".+\"} > 0)", "legendFormat": "{{name}}", "refId": "MemPct", "format": "table", "instant": true },
+        { "expr": "sum by (name) (rate(container_network_receive_bytes_total{name=~\".+\"}[5m]))", "legendFormat": "{{name}}", "refId": "NetIn", "format": "table", "instant": true },
+        { "expr": "sum by (name) (rate(container_network_transmit_bytes_total{name=~\".+\"}[5m]))", "legendFormat": "{{name}}", "refId": "NetOut", "format": "table", "instant": true }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "📊 CPU 사용률",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "custom": { "fillOpacity": 20 } } },
+      "targets": [
+        { "expr": "sum by (name) (rate(container_cpu_usage_seconds_total{name=~\"$container\"}[5m]))", "legendFormat": "{{name}}" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "💾 메모리 사용량",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "unit": "bytes", "custom": { "fillOpacity": 20 } } },
+      "targets": [
+        { "expr": "sum by (name) (container_memory_usage_bytes{name=~\"$container\"})", "legendFormat": "{{name}}" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "🌐 네트워크 수신",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "fillOpacity": 20 } } },
+      "targets": [
+        { "expr": "sum by (name) (rate(container_network_receive_bytes_total{name=~\"$container\"}[5m]))", "legendFormat": "{{name}}" }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "🌐 네트워크 송신",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "fillOpacity": 20 } } },
+      "targets": [
+        { "expr": "sum by (name) (rate(container_network_transmit_bytes_total{name=~\"$container\"}[5m]))", "legendFormat": "{{name}}" }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "💿 디스크 I/O (Read)",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 21 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "fillOpacity": 20 } } },
+      "targets": [
+        { "expr": "sum by (name) (rate(container_fs_reads_bytes_total{name=~\"$container\"}[5m]))", "legendFormat": "{{name}}" }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "💿 디스크 I/O (Write)",
+      "type": "timeseries",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 21 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": { "defaults": { "unit": "Bps", "custom": { "fillOpacity": 20 } } },
+      "targets": [
+        { "expr": "sum by (name) (rate(container_fs_writes_bytes_total{name=~\"$container\"}[5m]))", "legendFormat": "{{name}}" }
+      ]
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": { "refresh_intervals": ["10s", "30s", "1m", "5m"] }
+}

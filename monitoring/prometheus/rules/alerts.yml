@@ -5,162 +5,229 @@ groups:
   - name: weave-api
     interval: 30s
     rules:
-      # 높은 에러율
-      - alert: HighErrorRate
-        expr: |
-          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
-          / sum(rate(http_server_requests_seconds_count[5m])) > 0.05
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "High error rate detected"
-          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes"
-
-      # 느린 응답 시간
-      - alert: SlowResponseTime
-        expr: |
-          histogram_quantile(0.95,
-            sum(rate(http_server_requests_seconds_bucket[5m])) by (le)
-          ) > 2
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Slow response time detected"
-          description: "95th percentile response time is {{ $value | humanizeDuration }}"
-
-      # API 서비스 다운
       - alert: APIServiceDown
         expr: up{job="weave-api"} == 0
         for: 1m
         labels:
           severity: critical
         annotations:
-          summary: "Weave API is down"
-          description: "API service has been down for more than 1 minute"
+          summary: "🚨 Weave API 서버 다운"
+          description: "API 서비스가 1분 이상 응답하지 않습니다."
 
-      # 높은 메모리 사용
+      - alert: HighErrorRate
+        expr: |
+          (sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) or vector(0))
+          / (sum(rate(http_server_requests_seconds_count[5m])) > 0) > 0.05
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🔥 높은 에러율 감지"
+          description: "5xx 에러율이 {{ $value | humanizePercentage }}입니다."
+
+      - alert: SlowResponseTime
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le)) > 3
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "🐢 응답 시간 지연"
+          description: "P95 응답시간: {{ $value | humanizeDuration }}"
+
       - alert: HighMemoryUsage
         expr: |
-          jvm_memory_used_bytes{area="heap"}
-          / jvm_memory_max_bytes{area="heap"} > 0.9
+          sum(jvm_memory_used_bytes{area="heap"}) / sum(jvm_memory_max_bytes{area="heap"}) > 0.85
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "High JVM heap memory usage"
-          description: "JVM heap memory usage is {{ $value | humanizePercentage }}"
+          summary: "💾 JVM 메모리 부족 경고"
+          description: "힙 메모리 사용률: {{ $value | humanizePercentage }}"
 
-      # GC 시간 과다
+      - alert: CriticalMemoryUsage
+        expr: |
+          sum(jvm_memory_used_bytes{area="heap"}) / sum(jvm_memory_max_bytes{area="heap"}) > 0.95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🆘 JVM 메모리 위험"
+          description: "힙 메모리 사용률: {{ $value | humanizePercentage }} - OOM 위험!"
+
       - alert: HighGCTime
         expr: |
-          rate(jvm_gc_pause_seconds_sum[5m])
-          / rate(jvm_gc_pause_seconds_count[5m]) > 0.5
+          sum(rate(jvm_gc_pause_seconds_sum[5m])) > 0.5
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "High GC pause time"
-          description: "Average GC pause time is {{ $value | humanizeDuration }}"
+          summary: "♻️ GC 시간 과다"
+          description: "GC에 초당 {{ $value | humanizeDuration }} 소요 중"
 
   # ============================================
-  # Infrastructure Alerts
+  # Container Alerts
+  # ============================================
+  - name: containers
+    interval: 30s
+    rules:
+      - alert: ContainerDown
+        expr: |
+          absent(container_last_seen{name=~"weave_api.*"}) or 
+          (time() - container_last_seen{name=~"weave_api.*"}) > 60
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🐳 API 컨테이너 다운"
+          description: "weave_api 컨테이너가 응답하지 않습니다."
+
+      - alert: ContainerHighCPU
+        expr: |
+          sum by (name) (rate(container_cpu_usage_seconds_total{name=~".+"}[5m])) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "🔥 컨테이너 CPU 높음"
+          description: "{{ $labels.name }} CPU 사용률: {{ $value | humanizePercentage }}"
+
+      - alert: ContainerHighMemory
+        expr: |
+          (sum by (name) (container_memory_usage_bytes{name=~".+"}) 
+          / sum by (name) (container_spec_memory_limit_bytes{name=~".+"} > 0)) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "💾 컨테이너 메모리 높음"
+          description: "{{ $labels.name }} 메모리 사용률: {{ $value | humanizePercentage }}"
+
+      - alert: ContainerCriticalMemory
+        expr: |
+          (sum by (name) (container_memory_usage_bytes{name=~".+"}) 
+          / sum by (name) (container_spec_memory_limit_bytes{name=~".+"} > 0)) > 0.95
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "🆘 컨테이너 메모리 위험"
+          description: "{{ $labels.name }} 메모리 사용률: {{ $value | humanizePercentage }} - OOMKill 위험!"
+
+      - alert: ContainerRestarted
+        expr: |
+          increase(container_start_time_seconds{name=~".+"}[10m]) > 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "🔄 컨테이너 재시작됨"
+          description: "{{ $labels.name }}이(가) 최근 10분 내 재시작되었습니다."
+
+  # ============================================
+  # Infrastructure Alerts  
   # ============================================
   - name: infrastructure
     interval: 30s
     rules:
-      # MongoDB 다운
       - alert: MongoDBDown
-        expr: mongodb_up == 0
+        expr: |
+          sum(mongodb_driver_pool_size) == 0 or absent(mongodb_driver_pool_size)
         for: 1m
         labels:
           severity: critical
         annotations:
-          summary: "MongoDB is down"
-          description: "MongoDB has been down for more than 1 minute"
+          summary: "🍃 MongoDB 연결 실패"
+          description: "MongoDB 커넥션 풀이 비어있습니다."
 
-      # Redis 다운
-      - alert: RedisDown
-        expr: redis_up == 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Redis is down"
-          description: "Redis has been down for more than 1 minute"
-
-      # 디스크 용량 부족
-      - alert: LowDiskSpace
+      - alert: MongoDBHighLatency
         expr: |
-          (node_filesystem_avail_bytes{mountpoint="/"}
-          / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Low disk space"
-          description: "Disk space is less than 10% on {{ $labels.instance }}"
-
-      # 컨테이너 재시작
-      - alert: ContainerRestarting
-        expr: |
-          increase(container_restart_count[1h]) > 5
+          sum(rate(mongodb_driver_commands_seconds_sum[5m])) 
+          / sum(rate(mongodb_driver_commands_seconds_count[5m])) > 0.5
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Container is restarting frequently"
-          description: "Container {{ $labels.name }} has restarted {{ $value }} times in the last hour"
+          summary: "🐌 MongoDB 응답 지연"
+          description: "MongoDB 평균 레이턴시: {{ $value | humanizeDuration }}"
 
-  # ============================================
-  # Traefik Alerts
-  # ============================================
-  - name: traefik
-    interval: 30s
-    rules:
-      # Traefik 다운
-      - alert: TraefikDown
-        expr: up{job="traefik"} == 0
-        for: 1m
+      - alert: TomcatThreadsExhausted
+        expr: |
+          tomcat_threads_busy_threads / tomcat_threads_config_max_threads > 0.9
+        for: 5m
         labels:
           severity: critical
         annotations:
-          summary: "Traefik is down"
-          description: "Traefik load balancer has been down for more than 1 minute"
+          summary: "🧵 Tomcat 스레드 부족"
+          description: "사용중인 스레드: {{ $value | humanizePercentage }} - 요청 처리 불가 위험!"
 
-      # 백엔드 서비스 없음
-      - alert: TraefikNoBackend
-        expr: traefik_service_server_up == 0
+      - alert: HighSystemCPU
+        expr: system_cpu_usage > 0.9
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Traefik has no backend servers"
-          description: "Service {{ $labels.service }} has no healthy backend servers"
+          summary: "🔥 시스템 CPU 높음"
+          description: "시스템 CPU 사용률: {{ $value | humanizePercentage }}"
 
   # ============================================
-  # Backup Alerts
+  # SSL Certificate Alerts
   # ============================================
-  - name: backup
+  - name: ssl
     interval: 1h
     rules:
-      # 백업 오래됨
-      - alert: BackupTooOld
-        expr: (time() - mongodb_backup_timestamp) > 86400
+      - alert: SSLCertExpiringSoon
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 30
         for: 1h
         labels:
           severity: warning
         annotations:
-          summary: "MongoDB backup is too old"
-          description: "Last backup was {{ $value | humanizeDuration }} ago"
+          summary: "🔐 SSL 인증서 만료 임박"
+          description: "{{ $labels.instance }} 인증서가 {{ $value | printf \"%.0f\" }}일 후 만료됩니다."
 
-      # 백업 실패
-      - alert: BackupFailed
-        expr: mongodb_backup_status != 0
-        for: 5m
+      - alert: SSLCertExpiringCritical
+        expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 7
+        for: 1h
         labels:
           severity: critical
         annotations:
-          summary: "MongoDB backup failed"
-          description: "Last backup operation failed"
+          summary: "🆘 SSL 인증서 만료 위험"
+          description: "{{ $labels.instance }} 인증서가 {{ $value | printf \"%.0f\" }}일 후 만료됩니다!"
+
+  # ============================================
+  # Business / Traffic Alerts
+  # ============================================
+  - name: business
+    interval: 1m
+    rules:
+      - alert: NoTraffic
+        expr: |
+          sum(rate(http_server_requests_seconds_count[5m])) == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "📉 트래픽 없음"
+          description: "10분간 API 요청이 없습니다. 서비스 상태를 확인하세요."
+
+      - alert: TrafficSpike
+        expr: |
+          sum(rate(http_server_requests_seconds_count[5m])) 
+          > 3 * sum(rate(http_server_requests_seconds_count[1h] offset 1d))
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "📈 트래픽 급증"
+          description: "요청량이 전일 대비 300% 이상 증가했습니다."
+
+      - alert: High4xxRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"4.."}[5m])) 
+          / sum(rate(http_server_requests_seconds_count[5m])) > 0.2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "⚠️ 4xx 에러 다수 발생"
+          description: "4xx 에러율: {{ $value | humanizePercentage }} - 클라이언트 요청 문제 확인 필요"

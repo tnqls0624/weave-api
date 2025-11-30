@@ -17,14 +17,38 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # Weave API 메트릭 (API 서버 퍼블릭 IP 사용)
+  # Weave API 메트릭
+  # 배포 시 API_SERVER_IP를 실제 IP로 치환
   - job_name: 'weave-api'
     metrics_path: /api/actuator/prometheus
     static_configs:
-      - targets: ['13.125.195.7:80']
+      - targets: ['${API_SERVER_IP}:80']
         labels:
           instance: 'weave-api-prod'
     relabel_configs:
       - source_labels: [__address__]
         target_label: instance
         replacement: 'weave-api-prod'
+
+  # SSL 인증서 체크
+  - job_name: 'ssl-check'
+    metrics_path: /probe
+    params:
+      module: [ssl_probe]
+    static_configs:
+      - targets:
+          - https://api.weave.io.kr
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox:9115
+
+  # 컨테이너 메트릭 (cAdvisor)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['${API_SERVER_IP}:8082']
+        labels:
+          instance: 'weave-api-server'
