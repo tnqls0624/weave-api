@@ -42,11 +42,11 @@ public class SecurityConfig {
             .frameOptions(frame -> frame.disable()) // WebView에서 로드 허용
         )
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers(EndpointRequest.toAnyEndpoint()).permitAll()
+            // Prometheus, Health만 공개 (모니터링용)
+            .requestMatchers(EndpointRequest.to("health", "info", "prometheus")).permitAll()
             .requestMatchers(
                 "/",
                 "/health",
-                "/actuator/**",
                 "/auth/**",
                 "/user/invite/**",
                 "/swagger/**",
