@@ -96,7 +96,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"weave-api\"}[5m]))",
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"weave-api\", uri!~\"/actuator.*|/health|/ws.*\"}[5m]))",
           "refId": "A"
         }
       ],
@@ -144,11 +144,11 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"weave-api\"}[5m])) by (le))",
+          "expr": "sum(rate(http_server_requests_seconds_sum{application=\"weave-api\", uri!~\"/actuator.*|/health|/ws.*\"}[5m])) / sum(rate(http_server_requests_seconds_count{application=\"weave-api\", uri!~\"/actuator.*|/health|/ws.*\"}[5m]))",
           "refId": "A"
         }
       ],
-      "title": "P95 Latency",
+      "title": "Avg Latency",
       "type": "stat"
     },
     {
@@ -192,7 +192,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"weave-api\", status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count{application=\"weave-api\"}[5m])) * 100",
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"weave-api\", status=~\"5..\", uri!~\"/actuator.*|/health|/ws.*\"}[5m])) / sum(rate(http_server_requests_seconds_count{application=\"weave-api\", uri!~\"/actuator.*|/health|/ws.*\"}[5m])) * 100",
           "refId": "A"
         }
       ],
@@ -258,7 +258,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"weave-api\"}[1m])) by (uri)",
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"weave-api\", uri!~\"/actuator.*|/health|/ws.*\"}[1m])) by (uri)",
           "legendFormat": "{{uri}}",
           "refId": "A"
         }
@@ -325,12 +325,12 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"weave-api\"}[5m])) by (le, uri))",
+          "expr": "sum(rate(http_server_requests_seconds_sum{application=\"weave-api\", uri!~\"/actuator.*|/health|/ws.*\"}[5m])) by (uri) / sum(rate(http_server_requests_seconds_count{application=\"weave-api\", uri!~\"/actuator.*|/health|/ws.*\"}[5m])) by (uri)",
           "legendFormat": "{{uri}}",
           "refId": "A"
         }
       ],
-      "title": "P95 Latency by Endpoint",
+      "title": "Avg Latency by Endpoint",
       "type": "timeseries"
     },
     {
@@ -405,19 +405,19 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "sum(increase(http_server_requests_seconds_count{application=\"weave-api\", status=~\"2..\"}[1m]))",
+          "expr": "sum(increase(http_server_requests_seconds_count{application=\"weave-api\", status=~\"2..\", uri!~\"/actuator.*|/health|/ws.*\"}[1m]))",
           "legendFormat": "2xx",
           "refId": "A"
         },
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "sum(increase(http_server_requests_seconds_count{application=\"weave-api\", status=~\"4..\"}[1m]))",
+          "expr": "sum(increase(http_server_requests_seconds_count{application=\"weave-api\", status=~\"4..\", uri!~\"/actuator.*|/health|/ws.*\"}[1m]))",
           "legendFormat": "4xx",
           "refId": "B"
         },
         {
           "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-          "expr": "sum(increase(http_server_requests_seconds_count{application=\"weave-api\", status=~\"5..\"}[1m]))",
+          "expr": "sum(increase(http_server_requests_seconds_count{application=\"weave-api\", status=~\"5..\", uri!~\"/actuator.*|/health|/ws.*\"}[1m]))",
           "legendFormat": "5xx",
           "refId": "C"
         }
