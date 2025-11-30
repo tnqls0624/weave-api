@@ -6,7 +6,6 @@ import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -28,19 +27,7 @@ public class SecurityConfig {
   private final JwtTokenProvider jwtTokenProvider;
   private final UserDetailsService userDetailsService;
 
-  // Actuator 전용 SecurityFilterChain (우선순위 높음)
   @Bean
-  @Order(1)
-  public SecurityFilterChain actuatorSecurityFilterChain(HttpSecurity http) throws Exception {
-    http
-        .securityMatcher("/actuator/**", "/health")
-        .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-        .csrf(AbstractHttpConfigurer::disable);
-    return http.build();
-  }
-
-  @Bean
-  @Order(2)
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
     http
