@@ -62,6 +62,13 @@ public class Schedule {
   @Indexed
   private ObjectId workspace;
 
+  @Field("reminder_minutes")
+  private Integer reminderMinutes;  // 알림 시간 (분 단위, null이면 알림 없음)
+
+  @Field("reminder_sent")
+  @Builder.Default
+  private Boolean reminderSent = false;  // 알림 전송 여부
+
   @CreatedDate
   private Date createdAt;
 

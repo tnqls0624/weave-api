@@ -48,4 +48,7 @@ public class CreateRequestScheduleDto {
 
   @Schema(example = "solar", description = "양력, 음력")
   private String calendarType;
+
+  @Schema(example = "30", description = "알림 시간 (분 단위, null이면 알림 없음)")
+  private Integer reminderMinutes;
 }

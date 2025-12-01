@@ -57,5 +57,12 @@ public interface ScheduleRepository extends MongoRepository<Schedule, ObjectId> 
    */
   @Query("{ 'workspace': ?0, 'start_date': { $gte: ?1, $lt: ?2 } }")
   List<Schedule> findByWorkspaceAndYear(ObjectId workspaceId, Date yearStart, Date yearEnd);
+
+  /**
+   * 알림 대상 일정 조회 (reminderMinutes가 설정되어 있고, 아직 알림이 발송되지 않은 일정)
+   * 현재 시간 + reminderMinutes 범위 내의 일정을 조회
+   */
+  @Query("{ 'reminder_minutes': { $ne: null }, 'reminder_sent': { $ne: true }, 'start_date': { $gte: ?0, $lt: ?1 } }")
+  List<Schedule> findSchedulesForReminder(Date startTime, Date endTime);
 }
 

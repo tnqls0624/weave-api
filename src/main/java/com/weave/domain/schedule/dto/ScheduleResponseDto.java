@@ -42,6 +42,9 @@ public class ScheduleResponseDto {
 
   private String workspace;
 
+  @JsonProperty("reminder_minutes")
+  private Integer reminderMinutes;
+
   public static ScheduleResponseDto from(Schedule schedule) {
     return ScheduleResponseDto.builder()
         .id(schedule.getId().toString())
@@ -59,6 +62,7 @@ public class ScheduleResponseDto {
         .workspace(schedule.getWorkspace() != null
             ? schedule.getWorkspace().toString()
             : null)
+        .reminderMinutes(schedule.getReminderMinutes())
         .build();
   }
 }

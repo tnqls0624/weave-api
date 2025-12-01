@@ -51,4 +51,8 @@ public class UpdateRequestScheduleDto {
   @JsonProperty("calendar_type")
   @NotNull
   private String calendarType;
+
+  @Schema(example = "30", description = "알림 시간 (분 단위, null이면 알림 없음)")
+  @JsonProperty("reminder_minutes")
+  private Integer reminderMinutes;
 }

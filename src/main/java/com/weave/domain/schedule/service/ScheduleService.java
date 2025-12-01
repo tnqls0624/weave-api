@@ -48,6 +48,8 @@ public class ScheduleService {
         .repeatType(String.valueOf(dto.getRepeatType()))
         .participants(participantIds)
         .calendarType(dto.getCalendarType())
+        .reminderMinutes(dto.getReminderMinutes())
+        .reminderSent(false)
         .build();
 
     Schedule savedSchedule = scheduleRepository.save(schedule);
@@ -67,6 +69,10 @@ public class ScheduleService {
     schedule.setEndDate(dto.getEndDate());
     schedule.setRepeatType(String.valueOf(dto.getRepeatType()));
     schedule.setCalendarType(dto.getCalendarType());
+    schedule.setReminderMinutes(dto.getReminderMinutes());
+
+    // 알림 설정이 변경되면 reminderSent 초기화
+    schedule.setReminderSent(false);
 
     Optional.ofNullable(dto.getParticipants())
         .ifPresent(participants ->
