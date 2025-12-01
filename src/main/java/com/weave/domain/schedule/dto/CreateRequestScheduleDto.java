@@ -1,6 +1,7 @@
 package com.weave.domain.schedule.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -53,5 +54,6 @@ public class CreateRequestScheduleDto {
   private Integer reminderMinutes;
 
   @Schema(example = "false", description = "중요 일정 여부 (D-day 알림용)")
+  @JsonProperty("isImportant")
   private Boolean isImportant;
 }
