@@ -72,6 +72,13 @@ public class Schedule {
   @Field("last_reminder_sent_for")
   private Date lastReminderSentFor;  // 마지막 알림이 발송된 일정 시작 시간 (반복 일정용)
 
+  @Field("is_important")
+  @Builder.Default
+  private Boolean isImportant = false;  // 중요 일정 여부 (D-day 알림용)
+
+  @Field("last_dday_notification_sent")
+  private Integer lastDdayNotificationSent;  // 마지막으로 발송된 D-day 알림 (3 = D-3, 1 = D-1, 0 = D-day)
+
   @CreatedDate
   private Date createdAt;
 

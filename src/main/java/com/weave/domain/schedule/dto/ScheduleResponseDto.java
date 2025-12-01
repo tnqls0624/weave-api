@@ -45,6 +45,9 @@ public class ScheduleResponseDto {
   @JsonProperty("reminder_minutes")
   private Integer reminderMinutes;
 
+  @JsonProperty("is_important")
+  private Boolean isImportant;
+
   public static ScheduleResponseDto from(Schedule schedule) {
     return ScheduleResponseDto.builder()
         .id(schedule.getId().toString())
@@ -63,6 +66,7 @@ public class ScheduleResponseDto {
             ? schedule.getWorkspace().toString()
             : null)
         .reminderMinutes(schedule.getReminderMinutes())
+        .isImportant(schedule.getIsImportant())
         .build();
   }
 }

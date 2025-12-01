@@ -51,4 +51,7 @@ public class CreateRequestScheduleDto {
 
   @Schema(example = "30", description = "알림 시간 (분 단위, null이면 알림 없음)")
   private Integer reminderMinutes;
+
+  @Schema(example = "false", description = "중요 일정 여부 (D-day 알림용)")
+  private Boolean isImportant;
 }

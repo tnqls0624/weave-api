@@ -233,4 +233,90 @@ public class NotificationScheduler {
     }
   }
 
+  /**
+   * 매일 오전 9시에 D-day 알림 발송 (중요 일정) D-3, D-1, D-day에 알림 발송
+   */
+  @Scheduled(cron = "0 0 6 * * *")
+  @SchedulerLock(name = "sendDdayNotification",
+      lockAtMostFor = "10m",
+      lockAtLeastFor = "1m")
+  public void sendDdayNotification() {
+    log.info("Starting D-day notification batch");
+
+    ZoneId seoulZone = ZoneId.of("Asia/Seoul");
+    LocalDate today = LocalDate.now(seoulZone);
+
+    // 오늘부터 4일 후까지의 중요 일정 조회 (D-3 ~ D-day)
+    Date searchStart = Date.from(today.atStartOfDay(seoulZone).toInstant());
+    Date searchEnd = Date.from(today.plusDays(4).atStartOfDay(seoulZone).toInstant());
+
+    List<Schedule> importantSchedules = scheduleRepository.findImportantSchedules(searchStart,
+        searchEnd);
+
+    if (importantSchedules.isEmpty()) {
+      log.info("No important schedules found for D-day notification");
+      return;
+    }
+
+    log.info("Found {} important schedules", importantSchedules.size());
+
+    for (Schedule schedule : importantSchedules) {
+      if (schedule.getStartDate() == null || schedule.getParticipants() == null) {
+        continue;
+      }
+
+      LocalDate scheduleDate = schedule.getStartDate().toInstant()
+          .atZone(seoulZone).toLocalDate();
+      long daysUntil = ChronoUnit.DAYS.between(today, scheduleDate);
+
+      // D-3, D-1, D-day만 알림
+      if (daysUntil != 3 && daysUntil != 1 && daysUntil != 0) {
+        continue;
+      }
+
+      // 이미 같은 D-day에 알림을 보냈는지 확인
+      Integer lastSent = schedule.getLastDdayNotificationSent();
+      if (lastSent != null && lastSent == (int) daysUntil) {
+        log.debug("D-day notification already sent for schedule: {} at D-{}",
+            schedule.getTitle(), daysUntil);
+        continue;
+      }
+
+      sendDdayNotificationToParticipants(schedule, (int) daysUntil);
+
+      // 알림 발송 기록
+      schedule.setLastDdayNotificationSent((int) daysUntil);
+      scheduleRepository.save(schedule);
+    }
+
+    log.info("Completed D-day notification batch");
+  }
+
+  /**
+   * D-day 알림 발송
+   */
+  private void sendDdayNotificationToParticipants(Schedule schedule, int daysUntil) {
+    String title = "중요 일정 알림";
+    String body;
+
+    if (daysUntil == 0) {
+      body = String.format("오늘은 '%s' 일정이 있는 날입니다!", schedule.getTitle());
+    } else {
+      body = String.format("'%s' 일정이 %d일 남았습니다.", schedule.getTitle(), daysUntil);
+    }
+
+    for (ObjectId userId : schedule.getParticipants()) {
+      User user = userRepository.findById(userId).orElse(null);
+      if (user == null) {
+        continue;
+      }
+
+      if (user.getPushEnabled()) {
+        notificationService.sendPushNotification(user, title, body);
+        log.info("Sent D-{} notification to user {} for schedule {}",
+            daysUntil, user.getId(), schedule.getTitle());
+      }
+    }
+  }
+
 }

@@ -50,6 +50,7 @@ public class ScheduleService {
         .calendarType(dto.getCalendarType())
         .reminderMinutes(dto.getReminderMinutes())
         .reminderSent(false)
+        .isImportant(dto.getIsImportant() != null ? dto.getIsImportant() : false)
         .build();
 
     Schedule savedSchedule = scheduleRepository.save(schedule);
@@ -70,9 +71,15 @@ public class ScheduleService {
     schedule.setRepeatType(String.valueOf(dto.getRepeatType()));
     schedule.setCalendarType(dto.getCalendarType());
     schedule.setReminderMinutes(dto.getReminderMinutes());
+    schedule.setIsImportant(dto.getIsImportant() != null ? dto.getIsImportant() : false);
 
     // 알림 설정이 변경되면 reminderSent 초기화
     schedule.setReminderSent(false);
+
+    // 중요 일정이 변경되면 D-day 알림 초기화
+    if (dto.getIsImportant() != null && dto.getIsImportant()) {
+      schedule.setLastDdayNotificationSent(null);
+    }
 
     Optional.ofNullable(dto.getParticipants())
         .ifPresent(participants ->

@@ -64,5 +64,12 @@ public interface ScheduleRepository extends MongoRepository<Schedule, ObjectId> 
    */
   @Query("{ 'reminder_minutes': { $ne: null }, 'reminder_sent': { $ne: true }, 'start_date': { $gte: ?0, $lt: ?1 } }")
   List<Schedule> findSchedulesForReminder(Date startTime, Date endTime);
+
+  /**
+   * 중요 일정 조회 (D-day 알림용)
+   * 오늘부터 3일 이내 시작하는 중요 일정
+   */
+  @Query("{ 'is_important': true, 'start_date': { $gte: ?0, $lt: ?1 } }")
+  List<Schedule> findImportantSchedules(Date startTime, Date endTime);
 }
 
