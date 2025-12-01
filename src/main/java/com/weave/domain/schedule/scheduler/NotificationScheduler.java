@@ -173,12 +173,21 @@ public class NotificationScheduler {
       LocalDateTime reminderTruncated = reminderTime.truncatedTo(ChronoUnit.MINUTES);
 
       if (nowTruncated.equals(reminderTruncated)) {
+        // 이미 이 일정 시작 시간에 대해 알림을 보냈는지 확인 (반복 일정 중복 방지)
+        if (schedule.getLastReminderSentFor() != null &&
+            schedule.getLastReminderSentFor().equals(schedule.getStartDate())) {
+          log.debug("Reminder already sent for schedule: {} at {}", schedule.getTitle(),
+              scheduleStartTime);
+          continue;
+        }
+
         log.info("Sending reminder for schedule: {} (starts at {})", schedule.getTitle(),
             scheduleStartTime);
         sendReminderNotification(schedule);
 
-        // 알림 발송 완료 표시
+        // 알림 발송 완료 표시 (반복 일정을 위해 마지막 알림 시간도 저장)
         schedule.setReminderSent(true);
+        schedule.setLastReminderSentFor(schedule.getStartDate());
         scheduleRepository.save(schedule);
       }
     }

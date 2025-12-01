@@ -84,12 +84,17 @@ public class ScheduleService {
         );
 
     Schedule updatedSchedule = scheduleRepository.save(schedule);
+
+    scheduleNotificationService.sendScheduleUpdatedNotification(updatedSchedule);
+
     return ScheduleResponseDto.from(updatedSchedule);
   }
 
   public ScheduleResponseDto delete(String id) {
     Schedule schedule = scheduleRepository.findById(new ObjectId(id))
         .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
+
+    scheduleNotificationService.sendScheduleDeletedNotification(schedule);
 
     scheduleRepository.delete(schedule);
     return ScheduleResponseDto.from(schedule);

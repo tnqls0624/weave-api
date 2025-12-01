@@ -40,4 +40,48 @@ public class ScheduleNotificationService {
 
     log.info("Sent schedule creation notification to {} users", participants.size());
   }
+
+  /**
+   * 일정 수정 시 참여자들에게 알림 발송
+   */
+  @Async
+  public void sendScheduleUpdatedNotification(Schedule schedule) {
+    if (schedule.getParticipants() == null || schedule.getParticipants().isEmpty()) {
+      log.info("No participants in schedule to notify");
+      return;
+    }
+
+    List<User> participants = userRepository.findAllById(schedule.getParticipants());
+
+    String title = "일정 변경";
+    String body = String.format("'%s' 일정이 수정되었습니다.", schedule.getTitle());
+
+    participants.parallelStream()
+        .filter(User::getPushEnabled)
+        .forEach(user -> notificationService.sendPushNotification(user, title, body));
+
+    log.info("Sent schedule update notification to {} users", participants.size());
+  }
+
+  /**
+   * 일정 삭제 시 참여자들에게 알림 발송
+   */
+  @Async
+  public void sendScheduleDeletedNotification(Schedule schedule) {
+    if (schedule.getParticipants() == null || schedule.getParticipants().isEmpty()) {
+      log.info("No participants in schedule to notify");
+      return;
+    }
+
+    List<User> participants = userRepository.findAllById(schedule.getParticipants());
+
+    String title = "일정 삭제";
+    String body = String.format("'%s' 일정이 삭제되었습니다.", schedule.getTitle());
+
+    participants.parallelStream()
+        .filter(User::getPushEnabled)
+        .forEach(user -> notificationService.sendPushNotification(user, title, body));
+
+    log.info("Sent schedule delete notification to {} users", participants.size());
+  }
 }

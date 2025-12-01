@@ -69,6 +69,9 @@ public class Schedule {
   @Builder.Default
   private Boolean reminderSent = false;  // 알림 전송 여부
 
+  @Field("last_reminder_sent_for")
+  private Date lastReminderSentFor;  // 마지막 알림이 발송된 일정 시작 시간 (반복 일정용)
+
   @CreatedDate
   private Date createdAt;
 
