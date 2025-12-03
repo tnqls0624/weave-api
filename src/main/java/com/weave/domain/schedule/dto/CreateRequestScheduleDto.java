@@ -1,7 +1,6 @@
 package com.weave.domain.schedule.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
@@ -33,14 +32,12 @@ public class CreateRequestScheduleDto {
   @Schema(example = "2025-01-10T13:00:00", description = "시작 날짜")
   @JsonProperty("start_date")
   @JsonAlias({"startDate", "start_date"})
-  @JsonFormat(timezone = "Asia/Seoul")
   @NotNull
   private Date startDate;
 
   @Schema(example = "2025-01-11T13:00:00", description = "종료 날짜")
   @JsonProperty("end_date")
   @JsonAlias({"endDate", "end_date"})
-  @JsonFormat(timezone = "Asia/Seoul")
   @NotNull
   private Date endDate;
 
