@@ -411,12 +411,36 @@ public class WorkspaceService {
       return ImmutableList.of();
     }
 
+    int targetYear = year != null ? Integer.parseInt(year) : 0;
+    LocalDate yearStart = year != null ? LocalDate.of(targetYear, 1, 1) : null;
+    LocalDate yearEnd = year != null ? LocalDate.of(targetYear, 12, 31) : null;
+
+    // 반복 일정 필터: startDate가 조회 연도 이전이거나 같은 해인 경우 포함
+    // (조회 연도에 반복될 수 있는 일정)
+    java.util.function.Predicate<Schedule> isRepeatingScheduleForYear = s -> {
+      if (s.getRepeatType() == null || "none".equalsIgnoreCase(s.getRepeatType())) {
+        return false;
+      }
+      if (yearStart == null) {
+        return true;
+      }
+      LocalDate scheduleDate = s.getStartDate().toInstant()
+          .atZone(java.time.ZoneId.of("Asia/Seoul"))
+          .toLocalDate();
+      // 반복 일정은 시작일이 조회 연도 이전이거나 같은 해면 포함
+      return !scheduleDate.isAfter(yearEnd);
+    };
+
     // year + month + day
     if (year != null && month != null && day != null) {
-      LocalDate targetDate = LocalDate.of(Integer.parseInt(year), Integer.parseInt(month),
+      LocalDate targetDate = LocalDate.of(targetYear, Integer.parseInt(month),
           Integer.parseInt(day));
       return schedules.stream()
           .filter(s -> {
+            // 반복 일정은 별도 처리 (프론트에서 펼침)
+            if (isRepeatingScheduleForYear.test(s)) {
+              return true;
+            }
             LocalDate scheduleDate = s.getStartDate().toInstant()
                 .atZone(java.time.ZoneId.of("Asia/Seoul"))
                 .toLocalDate();
@@ -427,13 +451,17 @@ public class WorkspaceService {
 
     // year + month + week
     if (year != null && month != null && week != null) {
-      LocalDate firstDayOfMonth = LocalDate.of(Integer.parseInt(year), Integer.parseInt(month), 1);
+      LocalDate firstDayOfMonth = LocalDate.of(targetYear, Integer.parseInt(month), 1);
       LocalDate startOfWeek = firstDayOfMonth.plusWeeks(Integer.parseInt(week) - 1)
           .with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.SUNDAY));
       LocalDate endOfWeek = startOfWeek.plusDays(6);
 
       return schedules.stream()
           .filter(s -> {
+            // 반복 일정은 별도 처리 (프론트에서 펼침)
+            if (isRepeatingScheduleForYear.test(s)) {
+              return true;
+            }
             LocalDate scheduleDate = s.getStartDate().toInstant()
                 .atZone(java.time.ZoneId.of("Asia/Seoul"))
                 .toLocalDate();
@@ -444,10 +472,13 @@ public class WorkspaceService {
 
     // year + month
     if (year != null && month != null) {
-      int targetYear = Integer.parseInt(year);
       int targetMonth = Integer.parseInt(month);
       return schedules.stream()
           .filter(s -> {
+            // 반복 일정은 별도 처리 (프론트에서 펼침)
+            if (isRepeatingScheduleForYear.test(s)) {
+              return true;
+            }
             LocalDate scheduleDate = s.getStartDate().toInstant()
                 .atZone(java.time.ZoneId.of("Asia/Seoul"))
                 .toLocalDate();
@@ -460,11 +491,14 @@ public class WorkspaceService {
     // year only
     return schedules.stream()
         .filter(s -> {
-          assert year != null;
+          // 반복 일정은 별도 처리 (프론트에서 펼침)
+          if (isRepeatingScheduleForYear.test(s)) {
+            return true;
+          }
           LocalDate scheduleDate = s.getStartDate().toInstant()
               .atZone(java.time.ZoneId.of("Asia/Seoul"))
               .toLocalDate();
-          return scheduleDate.getYear() == Integer.parseInt(year);
+          return scheduleDate.getYear() == targetYear;
         })
         .collect(Collectors.toList());
   }
