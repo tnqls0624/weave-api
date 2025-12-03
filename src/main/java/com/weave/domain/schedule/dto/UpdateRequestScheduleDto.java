@@ -2,6 +2,8 @@ package com.weave.domain.schedule.dto;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.weave.global.config.FlexibleDateDeserializer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -29,12 +31,14 @@ public class UpdateRequestScheduleDto {
   @Schema(example = "2025-01-10T13:00:00", description = "시작 날짜")
   @JsonProperty("start_date")
   @JsonAlias({"startDate", "start_date"})
+  @JsonDeserialize(using = FlexibleDateDeserializer.class)
   @NotNull
   private Date startDate;
 
   @Schema(example = "2025-01-11T13:00:00", description = "종료 날짜")
   @JsonProperty("end_date")
   @JsonAlias({"endDate", "end_date"})
+  @JsonDeserialize(using = FlexibleDateDeserializer.class)
   @NotNull
   private Date endDate;
 
