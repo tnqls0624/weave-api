@@ -455,44 +455,31 @@ jobs:
     if: always()
 
     steps:
-      - name: Notify Slack on success
+      - name: Notify Discord on success
         if: needs.verify.result == 'success'
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: sarisia/actions-status-discord@v1
         with:
-          payload: |
-            {
-              "text": "✅ Deployment Successful",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "✅ *Weave API Deployment Successful*\n*Commit:* `${{ github.sha }}`\n*Branch:* `${{ github.ref_name }}`\n*Actor:* ${{ github.actor }}"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: success
+          title: "✅ Weave API 배포 성공"
+          description: |
+            **Commit:** `${{ github.sha }}`
+            **Branch:** `${{ github.ref_name }}`
+            **Actor:** ${{ github.actor }}
+          color: 0x00FF00
         continue-on-error: true
 
-      - name: Notify Slack on failure
+      - name: Notify Discord on failure
         if: needs.verify.result == 'failure'
-        uses: slackapi/slack-github-action@v1.26.0
+        uses: sarisia/actions-status-discord@v1
         with:
-          payload: |
-            {
-              "text": "❌ Deployment Failed",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "❌ *Weave API Deployment Failed*\n*Commit:* `${{ github.sha }}`\n*Branch:* `${{ github.ref_name }}`\n*Actor:* ${{ github.actor }}\n*Details:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Logs>"
-                  }
-                }
-              ]
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: failure
+          title: "❌ Weave API 배포 실패"
+          description: |
+            **Commit:** `${{ github.sha }}`
+            **Branch:** `${{ github.ref_name }}`
+            **Actor:** ${{ github.actor }}
+            **Details:** [View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          color: 0xFF0000
         continue-on-error: true
