@@ -30,14 +30,14 @@ public class UpdateRequestScheduleDto {
   @Schema(example = "2025-01-10T13:00:00", description = "시작 날짜")
   @JsonProperty("start_date")
   @JsonAlias({"startDate", "start_date"})
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
+  @JsonFormat(timezone = "Asia/Seoul")
   @NotNull
   private Date startDate;
 
   @Schema(example = "2025-01-11T13:00:00", description = "종료 날짜")
   @JsonProperty("end_date")
   @JsonAlias({"endDate", "end_date"})
-  @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
+  @JsonFormat(timezone = "Asia/Seoul")
   @NotNull
   private Date endDate;
 
