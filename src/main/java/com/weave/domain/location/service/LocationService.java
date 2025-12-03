@@ -34,15 +34,13 @@ public class LocationService {
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-    // 위치 저장
-    Location location = Location.builder()
-        .workspaceId(new ObjectId(workspaceId))
-        .userId(user.getId())
-        .latitude(dto.getLatitude())
-        .longitude(dto.getLongitude())
-        .build();
-
-    Location savedLocation = locationRepository.save(location);
+    // 위치 upsert (사용자별 1개 문서만 유지)
+    Location savedLocation = locationRepository.upsertLocation(
+        new ObjectId(workspaceId),
+        user.getId(),
+        dto.getLatitude(),
+        dto.getLongitude()
+    );
 
     return LocationResponseDto.from(savedLocation, user.getName());
   }

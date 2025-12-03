@@ -6,8 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.bson.types.ObjectId;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -17,9 +17,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "locations")
-@CompoundIndex(name = "workspace_user_idx", def = "{'workspace_id': 1, 'user_id': 1}")
-@CompoundIndex(name = "workspace_timestamp_idx", def = "{'workspace_id': 1, 'timestamp': -1}")
-@CompoundIndex(name = "workspace_user_timestamp_idx", def = "{'workspace_id': 1, 'user_id': 1, 'timestamp': -1}")
+@CompoundIndex(name = "workspace_user_idx", def = "{'workspace_id': 1, 'user_id': 1}", unique = true)
 public class Location {
 
   @Id
@@ -37,6 +35,6 @@ public class Location {
   @Field("longitude")
   private Double longitude;
 
-  @CreatedDate
+  @LastModifiedDate
   private Date timestamp;
 }

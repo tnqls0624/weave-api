@@ -9,7 +9,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface LocationRepository extends MongoRepository<Location, ObjectId> {
+public interface LocationRepository extends MongoRepository<Location, ObjectId>, LocationRepositoryCustom {
 
   List<Location> findByWorkspaceIdOrderByTimestampDesc(ObjectId workspaceId);
 
