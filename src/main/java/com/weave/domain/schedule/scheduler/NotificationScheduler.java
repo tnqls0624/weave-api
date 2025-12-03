@@ -141,9 +141,9 @@ public class NotificationScheduler {
     ZoneId seoulZone = ZoneId.of("Asia/Seoul");
     LocalDateTime now = LocalDateTime.now(seoulZone);
 
-    // 현재 시간부터 최대 알림 시간(24시간 = 1440분) 이후까지의 일정 조회
-    // 더 효율적으로 하기 위해 실제로는 현재 + 최대 reminderMinutes 범위만 조회
-    Date searchStart = Date.from(now.atZone(seoulZone).toInstant());
+    // 현재 시간에서 1분 전부터 검색 (크론 실행 밀리초 오차 방지)
+    // 24시간 이후까지의 일정 조회
+    Date searchStart = Date.from(now.minusMinutes(1).atZone(seoulZone).toInstant());
     Date searchEnd = Date.from(now.plusHours(24).atZone(seoulZone).toInstant());
 
     List<Schedule> schedulesWithReminder = scheduleRepository.findSchedulesForReminder(searchStart,
