@@ -142,16 +142,6 @@ jobs:
           target: "/home/ec2-user/"
           strip_components: 0
 
-      - name: Copy monitoring configs to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.PROD_EC2_HOST }}
-          username: ${{ secrets.PROD_EC2_USER }}
-          key: ${{ secrets.PROD_EC2_SSH_KEY }}
-          source: "monitoring/"
-          target: "/home/ec2-user/"
-          strip_components: 0
-
       - name: Configure scripts and cron jobs
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -180,17 +170,6 @@ jobs:
 
             echo "✅ Cron jobs configured:"
             crontab -l
-
-            # AlertManager Slack Webhook URL 설정
-            if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
-              sed -i "s|https://hooks.slack.com/services/YOUR/WEBHOOK/URL|${{ secrets.SLACK_WEBHOOK_URL }}|g" \
-                /home/ec2-user/monitoring/alertmanager/alertmanager.yml
-              echo "✅ AlertManager Slack webhook configured"
-            fi
-
-            echo ""
-            echo "✅ Monitoring configs deployed to /home/ec2-user/monitoring/"
-            ls -la /home/ec2-user/monitoring/
 
   # ============================================
   # Build & Push Docker Image
