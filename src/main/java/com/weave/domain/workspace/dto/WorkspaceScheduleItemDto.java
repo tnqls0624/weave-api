@@ -27,6 +27,9 @@ public class WorkspaceScheduleItemDto {
   private List<UserResponseDto> participants; // 참여자 정보로 응답
   private Map<String, String> participantColors;  // 참여자별 색상 (userId: colorCode)
   private Boolean isHoliday;
+  private Boolean isAllDay;  // 종일 일정 여부
   private String repeatType;
   private String calendarType;
+  private Integer reminderMinutes;  // 알림 시간 (분 단위)
+  private Boolean isImportant;  // 중요 일정 여부
 }

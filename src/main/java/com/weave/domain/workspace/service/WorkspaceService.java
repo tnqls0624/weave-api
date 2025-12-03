@@ -506,8 +506,11 @@ public class WorkspaceService {
           .memo(schedule.getMemo())
           .participants(participantDtos)
           .isHoliday(false)
+          .isAllDay(schedule.getIsAllDay())
           .repeatType(schedule.getRepeatType())
           .calendarType(schedule.getCalendarType())
+          .reminderMinutes(schedule.getReminderMinutes())
+          .isImportant(schedule.getIsImportant())
           .build());
     });
 
