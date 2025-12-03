@@ -275,17 +275,17 @@ services:
         - "traefik.http.services.api.loadbalancer.server.port=8080"
         # WebSocket 라우팅 (CORS 미들웨어 없이, 우선순위 높게)
         - "traefik.http.routers.api-ws.rule=PathPrefix(`/api/ws`)"
-        - "traefik.http.routers.api-ws.entrypoints=web"
+        - "traefik.http.routers.api-ws.entrypoints=web,websecure"
         - "traefik.http.routers.api-ws.service=api"
         - "traefik.http.routers.api-ws.priority=100"
         # Actuator 라우팅 (CORS 미들웨어 없이, 내부 헬스체크/모니터링용)
-        - "traefik.http.routers.api-actuator.rule=PathPrefix(`/actuator`) || PathPrefix(`/health`)"
-        - "traefik.http.routers.api-actuator.entrypoints=web"
+        - "traefik.http.routers.api-actuator.rule=PathPrefix(`/api/actuator`) || PathPrefix(`/api/health`)"
+        - "traefik.http.routers.api-actuator.entrypoints=web,websecure"
         - "traefik.http.routers.api-actuator.service=api"
         - "traefik.http.routers.api-actuator.priority=90"
         # HTTP 라우팅 (CORS 미들웨어 적용)
         - "traefik.http.routers.api.rule=PathPrefix(`/api`) || PathPrefix(`/swagger`)"
-        - "traefik.http.routers.api.entrypoints=web"
+        - "traefik.http.routers.api.entrypoints=web,websecure"
         - "traefik.http.routers.api.service=api"
         - "traefik.http.routers.api.middlewares=api-cors"
 
