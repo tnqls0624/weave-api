@@ -30,17 +30,19 @@ public class CreateRequestScheduleDto {
   private String memo;
 
   @Schema(example = "2025-01-10T13:00:00", description = "시작 날짜")
+  @JsonProperty("start_date")
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
   @NotNull
   private Date startDate;
 
   @Schema(example = "2025-01-11T13:00:00", description = "종료 날짜")
+  @JsonProperty("end_date")
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Seoul")
   @NotNull
   private Date endDate;
 
-  //default: none
   @Schema(example = "none", description = "반복 타입")
+  @JsonProperty("repeat_type")
   private String repeatType;
 
   @Schema(example = "[\"66a61517670be7ef30b10244\", \"66a7ae7f25483684cf347cd9\"]", description = "참여자")
@@ -48,12 +50,14 @@ public class CreateRequestScheduleDto {
   private List<String> participants;
 
   @Schema(example = "solar", description = "양력, 음력")
+  @JsonProperty("calendar_type")
   private String calendarType;
 
   @Schema(example = "30", description = "알림 시간 (분 단위, null이면 알림 없음)")
+  @JsonProperty("reminder_minutes")
   private Integer reminderMinutes;
 
   @Schema(example = "false", description = "중요 일정 여부 (D-day 알림용)")
-  @JsonProperty("isImportant")
+  @JsonProperty("is_important")
   private Boolean isImportant;
 }
