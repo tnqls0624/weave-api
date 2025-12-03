@@ -38,6 +38,9 @@ public class ScheduleResponseDto {
   @JsonProperty("calendar_type")
   private String calendarType;
 
+  @JsonProperty("is_all_day")
+  private Boolean isAllDay;
+
   private List<String> participants;
 
   private String workspace;
@@ -57,6 +60,7 @@ public class ScheduleResponseDto {
         .endDate(schedule.getEndDate())
         .repeatType(schedule.getRepeatType())
         .calendarType(schedule.getCalendarType())
+        .isAllDay(schedule.getIsAllDay())
         .participants(schedule.getParticipants() != null
             ? schedule.getParticipants().stream()
             .map(ObjectId::toString)

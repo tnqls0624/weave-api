@@ -58,6 +58,11 @@ public class UpdateRequestScheduleDto {
   @NotNull
   private String calendarType;
 
+  @Schema(example = "false", description = "종일 일정 여부")
+  @JsonProperty("is_all_day")
+  @JsonAlias({"isAllDay", "is_all_day"})
+  private Boolean isAllDay;
+
   @Schema(example = "30", description = "알림 시간 (분 단위, null이면 알림 없음)")
   @JsonProperty("reminder_minutes")
   @JsonAlias({"reminderMinutes", "reminder_minutes"})

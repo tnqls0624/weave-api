@@ -58,6 +58,10 @@ public class Schedule {
   @Builder.Default
   private String calendarType = "solar";
 
+  @Field("is_all_day")
+  @Builder.Default
+  private Boolean isAllDay = false;  // 종일 일정 여부
+
   @Field("workspace")
   @Indexed
   private ObjectId workspace;

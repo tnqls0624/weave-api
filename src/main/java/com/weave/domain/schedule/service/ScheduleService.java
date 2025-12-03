@@ -48,6 +48,7 @@ public class ScheduleService {
         .repeatType(String.valueOf(dto.getRepeatType()))
         .participants(participantIds)
         .calendarType(dto.getCalendarType())
+        .isAllDay(dto.getIsAllDay() != null ? dto.getIsAllDay() : false)
         .reminderMinutes(dto.getReminderMinutes())
         .reminderSent(false)
         .isImportant(dto.getIsImportant() != null ? dto.getIsImportant() : false)
@@ -70,6 +71,7 @@ public class ScheduleService {
     schedule.setEndDate(dto.getEndDate());
     schedule.setRepeatType(String.valueOf(dto.getRepeatType()));
     schedule.setCalendarType(dto.getCalendarType());
+    schedule.setIsAllDay(dto.getIsAllDay() != null ? dto.getIsAllDay() : false);
     schedule.setReminderMinutes(dto.getReminderMinutes());
     schedule.setIsImportant(dto.getIsImportant() != null ? dto.getIsImportant() : false);
 
