@@ -20,6 +20,7 @@ public enum ErrorCode {
   HANDLE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "C006", "접근이 거부되었습니다"),
   NOT_FOUND(HttpStatus.NOT_FOUND, "C007", "리소스를 찾을 수 없습니다"),
   DUPLICATE_RESOURCE(HttpStatus.CONFLICT, "C008", "중복된 리소스입니다"),
+  FORBIDDEN(HttpStatus.FORBIDDEN, "C009", "권한이 없습니다"),
 
   // User
   USER_NOT_FOUND(HttpStatus.NOT_FOUND, "U001", "사용자를 찾을 수 없습니다"),
