@@ -5,6 +5,10 @@ import com.weave.domain.locationreminder.dto.SetLocationReminderDto;
 import com.weave.domain.locationreminder.dto.ToggleLocationReminderDto;
 import com.weave.domain.locationreminder.entity.LocationReminder;
 import com.weave.domain.locationreminder.repository.LocationReminderRepository;
+import com.weave.domain.user.entity.User;
+import com.weave.domain.user.repository.UserRepository;
+import com.weave.global.exception.BusinessException;
+import com.weave.global.exception.ErrorCode;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
@@ -19,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class LocationReminderService {
 
   private final LocationReminderRepository locationReminderRepository;
+  private final UserRepository userRepository;
 
   private static final SimpleDateFormat dateFormat;
 
@@ -34,9 +39,10 @@ public class LocationReminderService {
   }
 
   @Transactional
-  public LocationReminderDto setReminder(String scheduleId, SetLocationReminderDto dto, String userId) {
+  public LocationReminderDto setReminder(String scheduleId, SetLocationReminderDto dto, String email) {
     ObjectId scheduleOid = new ObjectId(scheduleId);
-    ObjectId userOid = new ObjectId(userId);
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
     Optional<LocationReminder> existingOpt = locationReminderRepository.findByScheduleId(scheduleOid);
 
@@ -58,7 +64,7 @@ public class LocationReminderService {
           .address(dto.getAddress())
           .placeName(dto.getPlaceName())
           .isEnabled(true)
-          .createdBy(userOid)
+          .createdBy(user.getId())
           .createdAt(new Date())
           .build();
     }

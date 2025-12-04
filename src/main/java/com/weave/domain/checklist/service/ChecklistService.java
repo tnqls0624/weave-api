@@ -4,6 +4,8 @@ import com.weave.domain.checklist.dto.ChecklistItemDto;
 import com.weave.domain.checklist.dto.CreateChecklistItemDto;
 import com.weave.domain.checklist.entity.ChecklistItem;
 import com.weave.domain.checklist.repository.ChecklistItemRepository;
+import com.weave.domain.user.entity.User;
+import com.weave.domain.user.repository.UserRepository;
 import com.weave.global.exception.BusinessException;
 import com.weave.global.exception.ErrorCode;
 import java.text.SimpleDateFormat;
@@ -21,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ChecklistService {
 
   private final ChecklistItemRepository checklistItemRepository;
+  private final UserRepository userRepository;
 
   private static final SimpleDateFormat dateFormat;
 
@@ -36,15 +39,16 @@ public class ChecklistService {
   }
 
   @Transactional
-  public ChecklistItemDto addItem(String scheduleId, CreateChecklistItemDto dto, String userId) {
+  public ChecklistItemDto addItem(String scheduleId, CreateChecklistItemDto dto, String email) {
     ObjectId scheduleOid = new ObjectId(scheduleId);
-    ObjectId userOid = new ObjectId(userId);
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
     ChecklistItem item = ChecklistItem.builder()
         .scheduleId(scheduleOid)
         .content(dto.getContent())
         .isCompleted(false)
-        .createdBy(userOid)
+        .createdBy(user.getId())
         .createdAt(new Date())
         .build();
 
@@ -53,9 +57,10 @@ public class ChecklistService {
   }
 
   @Transactional
-  public ChecklistItemDto toggleItem(String scheduleId, String itemId, String userId) {
+  public ChecklistItemDto toggleItem(String scheduleId, String itemId, String email) {
     ObjectId itemOid = new ObjectId(itemId);
-    ObjectId userOid = new ObjectId(userId);
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
     ChecklistItem item = checklistItemRepository.findById(itemOid)
         .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
@@ -66,7 +71,7 @@ public class ChecklistService {
       item.setCompletedAt(null);
     } else {
       item.setIsCompleted(true);
-      item.setCompletedBy(userOid);
+      item.setCompletedBy(user.getId());
       item.setCompletedAt(new Date());
     }
 

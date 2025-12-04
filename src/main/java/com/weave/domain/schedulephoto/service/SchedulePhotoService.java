@@ -62,11 +62,12 @@ public class SchedulePhotoService {
   }
 
   @Transactional
-  public SchedulePhotoDto uploadPhoto(String scheduleId, MultipartFile file, String userId) {
+  public SchedulePhotoDto uploadPhoto(String scheduleId, MultipartFile file, String email) {
     validateImage(file);
 
     ObjectId scheduleOid = new ObjectId(scheduleId);
-    ObjectId userOid = new ObjectId(userId);
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
     java.nio.file.Path temp = null;
     try {
@@ -90,7 +91,7 @@ public class SchedulePhotoService {
           .scheduleId(scheduleOid)
           .url(url)
           .s3Key(key)
-          .uploadedBy(userOid)
+          .uploadedBy(user.getId())
           .uploadedAt(new Date())
           .build();
 
@@ -110,15 +111,16 @@ public class SchedulePhotoService {
   }
 
   @Transactional
-  public void deletePhoto(String scheduleId, String photoId, String userId) {
+  public void deletePhoto(String scheduleId, String photoId, String email) {
     ObjectId photoOid = new ObjectId(photoId);
-    ObjectId userOid = new ObjectId(userId);
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
     SchedulePhoto photo = schedulePhotoRepository.findById(photoOid)
         .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND));
 
     // 본인이 업로드한 사진만 삭제 가능
-    if (!photo.getUploadedBy().equals(userOid)) {
+    if (!photo.getUploadedBy().equals(user.getId())) {
       throw new BusinessException(ErrorCode.FORBIDDEN);
     }
 
