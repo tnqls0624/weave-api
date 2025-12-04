@@ -62,13 +62,20 @@ public class LocationService {
     Map<ObjectId, User> userMap = userRepository.findAllById(userIds).stream()
         .collect(Collectors.toMap(User::getId, Function.identity()));
 
-    // 위치 데이터와 사용자 정보 매핑
+    // 위치 데이터와 사용자 정보 매핑 (locationEnabled가 true인 유저만 반환)
     return latestLocations.stream()
         .map(location -> {
           User user = userMap.get(location.getUserId());
-          String userName = user != null ? user.getName() : "Unknown";
-          return LocationResponseDto.from(location, userName);
+          if (user == null) {
+            return null;
+          }
+          // locationEnabled가 false인 유저는 제외
+          if (!Boolean.TRUE.equals(user.getLocationEnabled())) {
+            return null;
+          }
+          return LocationResponseDto.from(location, user.getName());
         })
+        .filter(dto -> dto != null)
         .collect(Collectors.toList());
   }
 }
