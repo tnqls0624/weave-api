@@ -20,8 +20,5 @@ public class UpdateUserRequestDto {
   private String fcmToken;
   private Boolean pushEnabled;
   private Boolean locationEnabled;
-  private Boolean phishingGuardEnabled;
-  private Boolean phishingAutoBlock;
-  private String phishingSensitivityLevel;
   private String avatarUrl;
 }

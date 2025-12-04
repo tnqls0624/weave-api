@@ -6,6 +6,8 @@ import com.weave.domain.schedule.dto.ScheduleResponseDto;
 import com.weave.domain.schedule.dto.UpdateRequestScheduleDto;
 import com.weave.domain.schedule.entity.Schedule;
 import com.weave.domain.schedule.repository.ScheduleRepository;
+import com.weave.domain.user.entity.User;
+import com.weave.domain.user.repository.UserRepository;
 import com.weave.domain.workspace.entity.Workspace;
 import com.weave.domain.workspace.repository.WorkspaceRepository;
 import com.weave.global.BusinessException;
@@ -24,14 +26,18 @@ public class ScheduleService {
 
   private final ScheduleRepository scheduleRepository;
   private final WorkspaceRepository workspaceRepository;
+  private final UserRepository userRepository;
   private final ScheduleNotificationService scheduleNotificationService;
 
-  public ScheduleResponseDto create(CreateRequestScheduleDto dto) {
+  public ScheduleResponseDto create(CreateRequestScheduleDto dto, String creatorEmail) {
     log.info("create schedule: {}", dto);
     Workspace workspace = workspaceRepository.findById(new ObjectId(dto.getWorkspace()))
         .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
 
     log.info("create schedule for workspace: {}", workspace.getId());
+
+    // 일정 생성자 조회
+    User creator = userRepository.findByEmail(creatorEmail).orElse(null);
 
     List<ObjectId> participantIds = Optional.ofNullable(dto.getParticipants())
         .map(participants -> participants.stream()
@@ -56,7 +62,13 @@ public class ScheduleService {
 
     Schedule savedSchedule = scheduleRepository.save(schedule);
 
+    // 일정 참여자에게 초대 알림 발송 (생성자 포함하여 워크스페이스에도 알림)
     scheduleNotificationService.sendScheduleCreatedNotification(workspace, savedSchedule);
+
+    // 참여자가 있으면 초대 알림도 별도 발송
+    if (!participantIds.isEmpty()) {
+      scheduleNotificationService.sendScheduleInviteNotification(savedSchedule, creator);
+    }
 
     return ScheduleResponseDto.from(savedSchedule);
   }
@@ -64,6 +76,11 @@ public class ScheduleService {
   public ScheduleResponseDto update(UpdateRequestScheduleDto dto, String id) {
     Schedule schedule = scheduleRepository.findById(new ObjectId(id))
         .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
+
+    // 기존 참여자 목록 저장 (초대 알림을 위해)
+    List<ObjectId> oldParticipants = schedule.getParticipants() != null
+        ? List.copyOf(schedule.getParticipants())
+        : List.of();
 
     schedule.setTitle(dto.getTitle());
     schedule.setMemo(dto.getMemo());
@@ -94,7 +111,8 @@ public class ScheduleService {
 
     Schedule updatedSchedule = scheduleRepository.save(schedule);
 
-    scheduleNotificationService.sendScheduleUpdatedNotification(updatedSchedule);
+    // 기존 참여자 목록과 함께 알림 발송 (새로운 참여자에게는 초대 알림)
+    scheduleNotificationService.sendScheduleUpdatedNotification(updatedSchedule, oldParticipants);
 
     return ScheduleResponseDto.from(updatedSchedule);
   }

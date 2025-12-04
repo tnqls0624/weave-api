@@ -59,17 +59,17 @@ public class User {
   @Builder.Default
   private Boolean locationEnabled = false;
 
-  @Field("phishing_guard_enabled")
-  @Builder.Default
-  private Boolean phishingGuardEnabled = false;
-
-  @Field("phishing_auto_block")
-  @Builder.Default
-  private Boolean phishingAutoBlock = false;
-
-  @Field("phishing_sensitivity_level")
-  @Builder.Default
-  private String phishingSensitivityLevel = "medium";
+//  @Field("phishing_guard_enabled")
+//  @Builder.Default
+//  private Boolean phishingGuardEnabled = false;
+//
+//  @Field("phishing_auto_block")
+//  @Builder.Default
+//  private Boolean phishingAutoBlock = false;
+//
+//  @Field("phishing_sensitivity_level")
+//  @Builder.Default
+//  private String phishingSensitivityLevel = "medium";
 
   @Field("thumbnail_image")
   private String avatarUrl;

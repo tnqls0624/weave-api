@@ -69,15 +69,6 @@ public class UserService {
     if (dto.getLocationEnabled() != null) {
       user.setLocationEnabled(dto.getLocationEnabled());
     }
-    if (dto.getPhishingGuardEnabled() != null) {
-      user.setPhishingGuardEnabled(dto.getPhishingGuardEnabled());
-    }
-    if (dto.getPhishingAutoBlock() != null) {
-      user.setPhishingAutoBlock(dto.getPhishingAutoBlock());
-    }
-    if (dto.getPhishingSensitivityLevel() != null) {
-      user.setPhishingSensitivityLevel(dto.getPhishingSensitivityLevel());
-    }
 
     userRepository.save(user);
 
@@ -91,11 +82,8 @@ public class UserService {
   }
 
   /**
-   * 회원 탈퇴 - 사용자 및 관련 데이터 삭제
-   * 1. 워크스페이스에서 사용자 제거 (master인 경우 워크스페이스 삭제)
-   * 2. 일정에서 참여자 제거 (혼자인 일정은 삭제)
-   * 3. 위치 정보 삭제
-   * 4. 사용자 삭제
+   * 회원 탈퇴 - 사용자 및 관련 데이터 삭제 1. 워크스페이스에서 사용자 제거 (master인 경우 워크스페이스 삭제) 2. 일정에서 참여자 제거 (혼자인 일정은 삭제)
+   * 3. 위치 정보 삭제 4. 사용자 삭제
    */
   @Transactional
   public void deleteByEmail(String email) {
