@@ -1,6 +1,10 @@
 package com.weave.domain.schedule.service;
 
 import com.google.common.collect.ImmutableList;
+import com.weave.domain.checklist.dto.ChecklistItemDto;
+import com.weave.domain.checklist.service.ChecklistService;
+import com.weave.domain.locationreminder.dto.LocationReminderDto;
+import com.weave.domain.locationreminder.service.LocationReminderService;
 import com.weave.domain.schedule.dto.CreateRequestScheduleDto;
 import com.weave.domain.schedule.dto.ScheduleResponseDto;
 import com.weave.domain.schedule.dto.UpdateRequestScheduleDto;
@@ -28,6 +32,8 @@ public class ScheduleService {
   private final WorkspaceRepository workspaceRepository;
   private final UserRepository userRepository;
   private final ScheduleNotificationService scheduleNotificationService;
+  private final LocationReminderService locationReminderService;
+  private final ChecklistService checklistService;
 
   public ScheduleResponseDto create(CreateRequestScheduleDto dto, String creatorEmail) {
     log.info("create schedule: {}", dto);
@@ -130,6 +136,13 @@ public class ScheduleService {
   public ScheduleResponseDto findById(String id) {
     Schedule schedule = scheduleRepository.findById(new ObjectId(id))
         .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
-    return ScheduleResponseDto.from(schedule);
+
+    // 위치 알림 정보 조회
+    LocationReminderDto locationReminder = locationReminderService.getReminder(id);
+
+    // 체크리스트 조회
+    List<ChecklistItemDto> checklist = checklistService.getChecklist(id);
+
+    return ScheduleResponseDto.from(schedule, locationReminder, checklist);
   }
 }

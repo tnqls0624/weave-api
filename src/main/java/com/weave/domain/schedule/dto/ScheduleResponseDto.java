@@ -2,6 +2,8 @@ package com.weave.domain.schedule.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.weave.domain.checklist.dto.ChecklistItemDto;
+import com.weave.domain.locationreminder.dto.LocationReminderDto;
 import com.weave.domain.schedule.entity.Schedule;
 import java.util.Date;
 import java.util.List;
@@ -51,7 +53,20 @@ public class ScheduleResponseDto {
   @JsonProperty("is_important")
   private Boolean isImportant;
 
+  @JsonProperty("location_reminder")
+  private LocationReminderDto locationReminder;
+
+  private List<ChecklistItemDto> checklist;
+
   public static ScheduleResponseDto from(Schedule schedule) {
+    return from(schedule, null, null);
+  }
+
+  public static ScheduleResponseDto from(
+      Schedule schedule,
+      LocationReminderDto locationReminder,
+      List<ChecklistItemDto> checklist
+  ) {
     return ScheduleResponseDto.builder()
         .id(schedule.getId().toString())
         .title(schedule.getTitle())
@@ -71,6 +86,8 @@ public class ScheduleResponseDto {
             : null)
         .reminderMinutes(schedule.getReminderMinutes())
         .isImportant(schedule.getIsImportant())
+        .locationReminder(locationReminder)
+        .checklist(checklist)
         .build();
   }
 }
