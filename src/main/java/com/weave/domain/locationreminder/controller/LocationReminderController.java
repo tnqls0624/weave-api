@@ -1,5 +1,6 @@
 package com.weave.domain.locationreminder.controller;
 
+import com.weave.domain.locationreminder.dto.ArrivalNotificationDto;
 import com.weave.domain.locationreminder.dto.LocationReminderDto;
 import com.weave.domain.locationreminder.dto.SetLocationReminderDto;
 import com.weave.domain.locationreminder.dto.ToggleLocationReminderDto;
@@ -62,6 +63,18 @@ public class LocationReminderController {
   @DeleteMapping
   public ApiResponse<Void> deleteReminder(@PathVariable String scheduleId) {
     locationReminderService.deleteReminder(scheduleId);
+    return ApiResponse.ok(null);
+  }
+
+  @SecurityRequirement(name = "JWT")
+  @Operation(summary = "위치 도착 알림", description = "사용자가 설정된 위치에 도착했을 때 다른 참여자들에게 알림을 전송합니다.")
+  @PostMapping("/arrival")
+  public ApiResponse<Void> notifyArrival(
+      @PathVariable String scheduleId,
+      @Valid @RequestBody ArrivalNotificationDto dto,
+      @AuthenticationPrincipal UserDetails userDetails
+  ) {
+    locationReminderService.notifyArrival(scheduleId, dto, userDetails.getUsername());
     return ApiResponse.ok(null);
   }
 }
