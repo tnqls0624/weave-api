@@ -86,8 +86,8 @@ aws:
 # =========================
 naver:
   api:
-    client-id: ${NAVER_CLIENT_ID:TgFtutzHXObM4Zz5GsPg}
-    client-secret: ${NAVER_CLIENT_SECRET:PMLYSuKiN2}
+    client-id: ${NAVER_CLIENT_ID:}
+    client-secret: ${NAVER_CLIENT_SECRET:}
 
 # =========================
 # 피싱 탐지 ML 추론 서버 설정
