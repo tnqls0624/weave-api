@@ -82,6 +82,14 @@ aws:
     upload-prefix: ${AWS_S3_UPLOAD_PREFIX:${AWS_S3_UPLOAD_PATH:uploads/}}
 
 # =========================
+# 네이버 검색 API
+# =========================
+naver:
+  api:
+    client-id: ${NAVER_CLIENT_ID:}
+    client-secret: ${NAVER_CLIENT_SECRET:}
+
+# =========================
 # 피싱 탐지 ML 추론 서버 설정
 # =========================
 phishing:

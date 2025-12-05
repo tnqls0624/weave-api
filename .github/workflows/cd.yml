@@ -302,6 +302,8 @@ jobs:
             export AWS_ACCESS_KEY_ID="${{ secrets.PROD_AWS_ACCESS_KEY_ID }}"
             export AWS_SECRET_ACCESS_KEY="${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}"
             export FIREBASE_CONFIG_PATH="/app/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json"
+            export NAVER_CLIENT_ID="${{ secrets.NAVER_CLIENT_ID }}"
+            export NAVER_CLIENT_SECRET="${{ secrets.NAVER_CLIENT_SECRET }}"
 
             # ECR 로그인
             aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin $ECR_REGISTRY

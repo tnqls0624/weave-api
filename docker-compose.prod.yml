@@ -217,6 +217,10 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
 
+      # Naver API (장소 검색)
+      - NAVER_CLIENT_ID=${NAVER_CLIENT_ID}
+      - NAVER_CLIENT_SECRET=${NAVER_CLIENT_SECRET}
+
       - FIREBASE_CONFIG_PATH=${FIREBASE_CONFIG_PATH:-/app/keys/weave-75c40-firebase-adminsdk-fbsvc-ec0b3dc8b0.json}
 
       # Timezone
