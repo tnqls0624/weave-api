@@ -41,15 +41,6 @@ public class UserResponseDto {
   @Schema(description = "위치 사용 여부", example = "true")
   private boolean locationEnabled;
 
-  @Schema(description = "피싱 가드 활성화 여부", example = "false")
-  private boolean phishingGuardEnabled;
-
-  @Schema(description = "피싱 자동 차단 여부", example = "false")
-  private boolean phishingAutoBlock;
-
-  @Schema(description = "피싱 검사 민감도", example = "medium")
-  private String phishingSensitivityLevel;
-
   @Schema(description = "유저 프로필 이미지", example = "https://example.com/avatar.jpg")
   private String avatarUrl;
 
@@ -68,7 +59,8 @@ public class UserResponseDto {
         .birthday(user.getBirthday())
         .inviteCode(user.getInviteCode())
         .fcmToken(user.getFcmToken())
-        .locationEnabled(user.getLocationEnabled())
+        .pushEnabled(user.getPushEnabled() != null ? user.getPushEnabled() : true)
+        .locationEnabled(user.getLocationEnabled() != null ? user.getLocationEnabled() : false)
         .avatarUrl(user.getAvatarUrl())
         .createdAt(user.getCreatedAt())
         .updatedAt(user.getUpdatedAt())

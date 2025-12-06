@@ -37,6 +37,11 @@ public class UserService {
     User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
 
+    log.info("📱 [Notification Update] email: {}, request: pushEnabled={}, fcmToken={}, locationEnabled={}",
+        email, dto.getPushEnabled(), dto.getFcmToken() != null ? "exists" : "null", dto.getLocationEnabled());
+    log.info("📱 [Notification Update] BEFORE: pushEnabled={}, locationEnabled={}",
+        user.getPushEnabled(), user.getLocationEnabled());
+
     if (dto.getPushEnabled() != null) {
       user.setPushEnabled(dto.getPushEnabled());
     }
@@ -48,6 +53,9 @@ public class UserService {
     if (dto.getLocationEnabled() != null) {
       user.setLocationEnabled(dto.getLocationEnabled());
     }
+
+    log.info("📱 [Notification Update] AFTER: pushEnabled={}, locationEnabled={}",
+        user.getPushEnabled(), user.getLocationEnabled());
 
     userRepository.save(user);
     return UserResponseDto.from(user);
