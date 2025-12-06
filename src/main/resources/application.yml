@@ -17,6 +17,11 @@ spring:
       WRITE_DATES_AS_TIMESTAMPS: false
     default-property-inclusion: non_null
 
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 100MB
+
   data:
     mongodb:
       uri: mongodb://root:1234@localhost:27017/lovechedule?authSource=admin&maxPoolSize=50&minPoolSize=10&maxIdleTimeMS=45000&connectTimeoutMS=5000&socketTimeoutMS=30000
