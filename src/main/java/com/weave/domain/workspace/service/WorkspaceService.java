@@ -23,8 +23,8 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -63,7 +63,7 @@ public class WorkspaceService {
         Workspace.builder()
             .master(master.getId())
             .users(users)
-            .loveDay(dto.getLoveDay())
+            .title(dto.getTitle())
             .build()
     );
     // join master/users
@@ -76,7 +76,6 @@ public class WorkspaceService {
         () -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND)
     );
 
-    workspace.setLoveDay(dto.getLoveDay());
     workspaceRepository.save(workspace);
 
     Map<ObjectId, User> uMap = loadUsersForWorkspace(workspace);
@@ -102,15 +101,84 @@ public class WorkspaceService {
     return workspaces.stream().map(ws -> toDto(ws, uMap)).toArray(WorkspaceResponseDto[]::new);
   }
 
-  public void delete(String id) {
+  public void delete(String id, String email) {
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+    Workspace workspace = workspaceRepository.findById(new ObjectId(id))
+        .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
+
+    // 마스터만 삭제 가능
+    if (!workspace.getMaster().equals(user.getId())) {
+      throw new BusinessException(ErrorCode.NOT_WORKSPACE_MASTER);
+    }
+
+    // 워크스페이스의 모든 스케줄 삭제
+    scheduleRepository.deleteByWorkspace(new ObjectId(id));
     workspaceRepository.deleteById(new ObjectId(id));
   }
 
   /**
-   * 초대코드로 워크스페이스에 참여
-   * - 초대코드로 대상 사용자 찾기
-   * - 대상 사용자가 속한 워크스페이스 찾기
-   * - 현재 사용자를 해당 워크스페이스에 추가
+   * 워크스페이스 나가기 - 마스터는 나갈 수 없음 (삭제만 가능) - 일반 멤버만 나가기 가능
+   */
+  public void leave(String id, String email) {
+    User user = userRepository.findByEmail(email)
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+    Workspace workspace = workspaceRepository.findById(new ObjectId(id))
+        .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
+
+    // 마스터는 나갈 수 없음
+    if (workspace.getMaster().equals(user.getId())) {
+      throw new BusinessException(ErrorCode.MASTER_CANNOT_LEAVE);
+    }
+
+    // 워크스페이스에서 사용자 제거
+    workspace.getUsers().remove(user.getId());
+
+    // participantColors에서도 제거
+    if (workspace.getParticipantColors() != null) {
+      workspace.getParticipantColors().remove(user.getId().toString());
+    }
+
+    workspaceRepository.save(workspace);
+  }
+
+  /**
+   * 워크스페이스 멤버 추방 - 마스터만 추방 가능 - 자기 자신은 추방 불가
+   */
+  public void kickMember(String workspaceId, String targetUserId, String email) {
+    User master = userRepository.findByEmail(email)
+        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+    Workspace workspace = workspaceRepository.findById(new ObjectId(workspaceId))
+        .orElseThrow(() -> new BusinessException(ErrorCode.WORKSPACE_NOT_FOUND));
+
+    // 마스터만 추방 가능
+    if (!workspace.getMaster().equals(master.getId())) {
+      throw new BusinessException(ErrorCode.NOT_WORKSPACE_MASTER);
+    }
+
+    ObjectId targetId = new ObjectId(targetUserId);
+
+    // 자기 자신은 추방 불가
+    if (master.getId().equals(targetId)) {
+      throw new BusinessException(ErrorCode.CANNOT_KICK_SELF);
+    }
+
+    // 워크스페이스에서 사용자 제거
+    workspace.getUsers().remove(targetId);
+
+    // participantColors에서도 제거
+    if (workspace.getParticipantColors() != null) {
+      workspace.getParticipantColors().remove(targetUserId);
+    }
+
+    workspaceRepository.save(workspace);
+  }
+
+  /**
+   * 초대코드로 워크스페이스에 참여 - 초대코드로 대상 사용자 찾기 - 대상 사용자가 속한 워크스페이스 찾기 - 현재 사용자를 해당 워크스페이스에 추가
    */
   public WorkspaceResponseDto joinByInviteCode(String inviteCode, String email) {
     // 현재 사용자 조회
@@ -127,7 +195,8 @@ public class WorkspaceService {
     }
 
     // 대상 사용자가 master인 워크스페이스 찾기
-    List<Workspace> targetWorkspaces = workspaceRepository.findByUsersContaining(targetUser.getId());
+    List<Workspace> targetWorkspaces = workspaceRepository.findByUsersContaining(
+        targetUser.getId());
     Workspace workspace = targetWorkspaces.stream()
         .filter(ws -> ws.getMaster().equals(targetUser.getId()))
         .findFirst()
@@ -316,7 +385,6 @@ public class WorkspaceService {
         .users(userDtos)
         .participantColors(
             ws.getParticipantColors() != null ? ws.getParticipantColors() : new HashMap<>())
-        .loveDay(ws.getLoveDay())
         .createdAt(ws.getCreatedAt())
         .updatedAt(ws.getUpdatedAt())
         .build();
@@ -510,7 +578,8 @@ public class WorkspaceService {
     // 공휴일 추가
     holidays.forEach(holiday -> {
       LocalDate date = LocalDate.parse(holiday.getLocdate(), HOLIDAY_DATE_FORMATTER);
-      Date holidayDate = Date.from(date.atStartOfDay(java.time.ZoneId.of("Asia/Seoul")).toInstant());
+      Date holidayDate = Date.from(
+          date.atStartOfDay(java.time.ZoneId.of("Asia/Seoul")).toInstant());
 
       combinedSchedule.add(WorkspaceScheduleItemDto.builder()
           .startDate(holidayDate)
@@ -565,7 +634,6 @@ public class WorkspaceService {
         .id(workspace.getId())
         .master(master != null ? UserResponseDto.from(master) : null)
         .users(userDtos)
-        .loveDay(workspace.getLoveDay())
         .schedules(combinedSchedule)
         .build();
   }

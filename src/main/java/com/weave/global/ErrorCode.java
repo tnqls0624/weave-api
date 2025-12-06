@@ -38,6 +38,9 @@ public enum ErrorCode {
   INVALID_INVITE_CODE(HttpStatus.BAD_REQUEST, "C007", "Invalid invite code"),
   CANNOT_INVITE_SELF(HttpStatus.BAD_REQUEST, "C008", "Cannot use your own invite code"),
   ALREADY_JOINED_WORKSPACE(HttpStatus.CONFLICT, "C009", "Already joined this workspace"),
+  NOT_WORKSPACE_MASTER(HttpStatus.FORBIDDEN, "C010", "Only workspace master can perform this action"),
+  MASTER_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "C011", "Workspace master cannot leave, delete the workspace instead"),
+  CANNOT_KICK_SELF(HttpStatus.BAD_REQUEST, "C012", "Cannot kick yourself from workspace"),
   ;
 
 

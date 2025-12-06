@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -116,6 +117,43 @@ public class WorkspaceController {
       @PathVariable("inviteCode") String inviteCode,
       @AuthenticationPrincipal UserDetails userDetails) {
     return ApiResponse.ok(workspaceService.joinByInviteCode(inviteCode, userDetails.getUsername()));
+  }
+
+  // 워크스페이스 나가기
+  @SecurityRequirement(name = "JWT")
+  @Tag(name = "WORKSPACE")
+  @Operation(summary = "워크스페이스 나가기", description = "현재 워크스페이스에서 나갑니다. 마스터는 나갈 수 없습니다.")
+  @PostMapping("/{id}/leave")
+  public ApiResponse<Void> leave(
+      @PathVariable("id") String id,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    workspaceService.leave(id, userDetails.getUsername());
+    return ApiResponse.ok(null);
+  }
+
+  // 워크스페이스 삭제
+  @SecurityRequirement(name = "JWT")
+  @Tag(name = "WORKSPACE")
+  @Operation(summary = "워크스페이스 삭제", description = "워크스페이스를 삭제합니다. 마스터만 삭제할 수 있습니다.")
+  @DeleteMapping("/{id}")
+  public ApiResponse<Void> delete(
+      @PathVariable("id") String id,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    workspaceService.delete(id, userDetails.getUsername());
+    return ApiResponse.ok(null);
+  }
+
+  // 워크스페이스 멤버 추방
+  @SecurityRequirement(name = "JWT")
+  @Tag(name = "WORKSPACE")
+  @Operation(summary = "워크스페이스 멤버 추방", description = "워크스페이스에서 멤버를 추방합니다. 마스터만 추방할 수 있습니다.")
+  @PostMapping("/{id}/kick/{userId}")
+  public ApiResponse<Void> kickMember(
+      @PathVariable("id") String id,
+      @PathVariable("userId") String userId,
+      @AuthenticationPrincipal UserDetails userDetails) {
+    workspaceService.kickMember(id, userId, userDetails.getUsername());
+    return ApiResponse.ok(null);
   }
 
 }

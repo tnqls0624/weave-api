@@ -17,6 +17,5 @@ public class WorkspaceScheduleResponseDto {
   private ObjectId id;
   private UserResponseDto master;
   private List<UserResponseDto> users;
-  private String loveDay;
   private List<WorkspaceScheduleItemDto> schedules;
 }

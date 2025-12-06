@@ -19,12 +19,6 @@ public class UpdateWorkspaceRequestDto {
   )
   private String title;
 
-  @Schema(
-      example = "2024-01-01",
-      description = "사귀기 시작한 날짜"
-  )
-  private String loveDay;
-
   @Schema(example = "[\"68576234782d9c909f1b5ff2\", \"68576234782d9c909f1b5ff3\"]")
   private List<String> users;
 }

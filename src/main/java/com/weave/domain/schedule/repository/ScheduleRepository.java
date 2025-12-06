@@ -71,5 +71,10 @@ public interface ScheduleRepository extends MongoRepository<Schedule, ObjectId> 
    */
   @Query("{ 'is_important': true, 'start_date': { $gte: ?0, $lt: ?1 } }")
   List<Schedule> findImportantSchedules(Date startTime, Date endTime);
+
+  /**
+   * 워크스페이스별 일정 삭제
+   */
+  void deleteByWorkspace(ObjectId workspaceId);
 }
 

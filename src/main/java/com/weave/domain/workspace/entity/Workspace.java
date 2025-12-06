@@ -39,9 +39,6 @@ public class Workspace {
   @Field("participant_colors")
   private Map<String, String> participantColors; // key: userId, value: color code (e.g., "#FF5733")
 
-  @Field("love_day")
-  private String loveDay;
-
   @CreatedDate
   private Date createdAt;
 

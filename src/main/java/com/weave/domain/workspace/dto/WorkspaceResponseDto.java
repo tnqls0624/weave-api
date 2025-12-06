@@ -34,9 +34,6 @@ public class WorkspaceResponseDto {
   @Schema(description = "참여자별 스케줄 태그 색상 (userId: colorCode)", example = "{\"userId1\": \"#FF5733\", \"userId2\": \"#33C3FF\"}")
   private Map<String, String> participantColors;
 
-  @Schema(description = "사귄 날짜", example = "2024-01-01")
-  private String loveDay;
-
   @Schema(description = "생성일시")
   private Date createdAt;
 
@@ -51,7 +48,6 @@ public class WorkspaceResponseDto {
         .participantColors(workspace.getParticipantColors() != null
             ? workspace.getParticipantColors()
             : ImmutableMap.of())
-        .loveDay(workspace.getLoveDay())
         .createdAt(workspace.getCreatedAt())
         .updatedAt(workspace.getUpdatedAt())
         .build();
