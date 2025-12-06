@@ -81,6 +81,16 @@ public class GlobalExceptionHandler {
         .body(ApiErrorResponse.of(code, req.getRequestURI(), null, code.getMessage()));
   }
 
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<ApiErrorResponse> handleIllegalArgument(IllegalArgumentException ex,
+      HttpServletRequest req) {
+    log.warn("Invalid argument at {}: {}", req.getRequestURI(), ex.getMessage());
+    var code = ErrorCode.VALIDATION_ERROR;
+    return ResponseEntity
+        .status(code.getHttpStatus())
+        .body(ApiErrorResponse.of(code, req.getRequestURI(), null, ex.getMessage()));
+  }
+
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiErrorResponse> handleEtc(Exception ex, HttpServletRequest req) {
     log.error("Unhandled exception at {}: {}", req.getRequestURI(), ex.getMessage(), ex);

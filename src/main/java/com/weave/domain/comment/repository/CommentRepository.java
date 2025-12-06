@@ -11,5 +11,14 @@ public interface CommentRepository extends MongoRepository<Comment, ObjectId> {
 
   List<Comment> findByScheduleIdOrderByCreatedAtAsc(ObjectId scheduleId);
 
+  // 부모 댓글만 조회 (일반 댓글)
+  List<Comment> findByScheduleIdAndParentIdIsNullOrderByCreatedAtAsc(ObjectId scheduleId);
+
+  // 특정 댓글의 답글 조회
+  List<Comment> findByParentIdOrderByCreatedAtAsc(ObjectId parentId);
+
+  // 일정의 댓글 수
+  long countByScheduleId(ObjectId scheduleId);
+
   void deleteByScheduleId(ObjectId scheduleId);
 }
