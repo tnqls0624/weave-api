@@ -8,6 +8,7 @@ import com.weave.domain.schedule.dto.HolidayDto;
 import com.weave.domain.schedule.entity.Schedule;
 import com.weave.domain.schedule.repository.ScheduleRepository;
 import com.weave.domain.schedule.service.HolidayService;
+import com.weave.domain.schedulephoto.repository.SchedulePhotoRepository;
 import com.weave.domain.user.dto.UserResponseDto;
 import com.weave.domain.user.entity.User;
 import com.weave.domain.user.repository.UserRepository;
@@ -51,6 +52,7 @@ public class WorkspaceService {
   private final ScheduleRepository scheduleRepository;
   private final HolidayService holidayService;
   private final CommentRepository commentRepository;
+  private final SchedulePhotoRepository schedulePhotoRepository;
 
   public WorkspaceResponseDto create(CreateWorkspaceRequestDto dto, String email) {
 
@@ -603,8 +605,9 @@ public class WorkspaceService {
           .collect(Collectors.toList())
           : ImmutableList.of();
 
-      // 댓글 수 조회
+      // 댓글 수, 사진 수 조회
       long commentCount = commentRepository.countByScheduleId(schedule.getId());
+      long photoCount = schedulePhotoRepository.countByScheduleId(schedule.getId());
 
       combinedSchedule.add(WorkspaceScheduleItemDto.builder()
           .id(schedule.getId())
@@ -620,6 +623,7 @@ public class WorkspaceService {
           .reminderMinutes(schedule.getReminderMinutes())
           .isImportant(schedule.getIsImportant())
           .commentCount(commentCount)
+          .photoCount(photoCount)
           .build());
     });
 

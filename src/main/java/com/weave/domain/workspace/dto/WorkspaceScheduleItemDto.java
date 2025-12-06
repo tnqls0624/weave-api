@@ -33,4 +33,5 @@ public class WorkspaceScheduleItemDto {
   private Integer reminderMinutes;  // 알림 시간 (분 단위)
   private Boolean isImportant;  // 중요 일정 여부
   private Long commentCount;  // 댓글 수
+  private Long photoCount;  // 사진 수
 }
