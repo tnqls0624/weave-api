@@ -32,4 +32,5 @@ public class WorkspaceScheduleItemDto {
   private String calendarType;
   private Integer reminderMinutes;  // 알림 시간 (분 단위)
   private Boolean isImportant;  // 중요 일정 여부
+  private Long commentCount;  // 댓글 수
 }

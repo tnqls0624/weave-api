@@ -3,6 +3,7 @@ package com.weave.domain.workspace.service;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.weave.domain.comment.repository.CommentRepository;
 import com.weave.domain.schedule.dto.HolidayDto;
 import com.weave.domain.schedule.entity.Schedule;
 import com.weave.domain.schedule.repository.ScheduleRepository;
@@ -49,6 +50,7 @@ public class WorkspaceService {
   private final UserRepository userRepository;
   private final ScheduleRepository scheduleRepository;
   private final HolidayService holidayService;
+  private final CommentRepository commentRepository;
 
   public WorkspaceResponseDto create(CreateWorkspaceRequestDto dto, String email) {
 
@@ -601,6 +603,9 @@ public class WorkspaceService {
           .collect(Collectors.toList())
           : ImmutableList.of();
 
+      // 댓글 수 조회
+      long commentCount = commentRepository.countByScheduleId(schedule.getId());
+
       combinedSchedule.add(WorkspaceScheduleItemDto.builder()
           .id(schedule.getId())
           .startDate(schedule.getStartDate())
@@ -614,6 +619,7 @@ public class WorkspaceService {
           .calendarType(schedule.getCalendarType())
           .reminderMinutes(schedule.getReminderMinutes())
           .isImportant(schedule.getIsImportant())
+          .commentCount(commentCount)
           .build());
     });
 
