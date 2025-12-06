@@ -1,5 +1,8 @@
 package com.weave.domain.schedulephoto.service;
 
+import com.weave.domain.schedule.entity.Schedule;
+import com.weave.domain.schedule.repository.ScheduleRepository;
+import com.weave.domain.schedulephoto.dto.GalleryPhotoDto;
 import com.weave.domain.schedulephoto.dto.SchedulePhotoDto;
 import com.weave.domain.schedulephoto.entity.SchedulePhoto;
 import com.weave.domain.schedulephoto.repository.SchedulePhotoRepository;
@@ -12,7 +15,9 @@ import java.security.SecureRandom;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HexFormat;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +41,7 @@ public class SchedulePhotoService {
 
   private final S3Client s3Client;
   private final SchedulePhotoRepository schedulePhotoRepository;
+  private final ScheduleRepository scheduleRepository;
   private final UserRepository userRepository;
 
   @Value("${aws.s3.bucket}")
@@ -59,6 +65,70 @@ public class SchedulePhotoService {
     ObjectId scheduleOid = new ObjectId(scheduleId);
     List<SchedulePhoto> photos = schedulePhotoRepository.findByScheduleIdOrderByUploadedAtDesc(scheduleOid);
     return photos.stream().map(this::toDto).collect(Collectors.toList());
+  }
+
+  /**
+   * 워크스페이스의 모든 사진 조회 (갤러리용)
+   */
+  public List<GalleryPhotoDto> getGalleryPhotos(String workspaceId) {
+    ObjectId workspaceOid = new ObjectId(workspaceId);
+
+    // 1. 워크스페이스의 모든 스케줄 조회
+    List<Schedule> schedules = scheduleRepository.findByWorkspace(workspaceOid);
+    if (schedules.isEmpty()) {
+      return List.of();
+    }
+
+    // 2. 스케줄 ID 목록 추출 및 맵 생성
+    List<ObjectId> scheduleIds = schedules.stream()
+        .map(Schedule::getId)
+        .collect(Collectors.toList());
+
+    Map<ObjectId, Schedule> scheduleMap = new HashMap<>();
+    for (Schedule schedule : schedules) {
+      scheduleMap.put(schedule.getId(), schedule);
+    }
+
+    // 3. 모든 사진 조회
+    List<SchedulePhoto> photos = schedulePhotoRepository.findByScheduleIdInOrderByUploadedAtDesc(scheduleIds);
+
+    // 4. 유저 정보 조회
+    List<ObjectId> uploaderIds = photos.stream()
+        .map(SchedulePhoto::getUploadedBy)
+        .filter(id -> id != null)
+        .distinct()
+        .collect(Collectors.toList());
+
+    Map<ObjectId, User> userMap = new HashMap<>();
+    if (!uploaderIds.isEmpty()) {
+      List<User> users = userRepository.findAllById(uploaderIds);
+      for (User user : users) {
+        userMap.put(user.getId(), user);
+      }
+    }
+
+    // 5. GalleryPhotoDto로 변환
+    return photos.stream()
+        .map(photo -> toGalleryDto(photo, scheduleMap, userMap))
+        .collect(Collectors.toList());
+  }
+
+  private GalleryPhotoDto toGalleryDto(SchedulePhoto photo, Map<ObjectId, Schedule> scheduleMap, Map<ObjectId, User> userMap) {
+    Schedule schedule = scheduleMap.get(photo.getScheduleId());
+    User uploader = photo.getUploadedBy() != null ? userMap.get(photo.getUploadedBy()) : null;
+
+    return GalleryPhotoDto.builder()
+        .id(photo.getId().toHexString())
+        .url(photo.getUrl())
+        .thumbnailUrl(photo.getThumbnailUrl())
+        .scheduleId(photo.getScheduleId() != null ? photo.getScheduleId().toHexString() : null)
+        .scheduleTitle(schedule != null ? schedule.getTitle() : null)
+        .scheduleDate(schedule != null ? schedule.getStartDate() : null)
+        .uploadedBy(photo.getUploadedBy() != null ? photo.getUploadedBy().toHexString() : null)
+        .uploadedByName(uploader != null ? uploader.getName() : null)
+        .uploadedAt(photo.getUploadedAt())
+        .caption(photo.getCaption())
+        .build();
   }
 
   @Transactional

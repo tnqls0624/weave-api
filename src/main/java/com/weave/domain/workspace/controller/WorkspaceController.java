@@ -1,6 +1,8 @@
 package com.weave.domain.workspace.controller;
 
 import com.weave.domain.auth.service.AuthService;
+import com.weave.domain.schedulephoto.dto.GalleryPhotoDto;
+import com.weave.domain.schedulephoto.service.SchedulePhotoService;
 import com.weave.domain.workspace.dto.CreateWorkspaceRequestDto;
 import com.weave.domain.workspace.dto.UpdateParticipantColorRequestDto;
 import com.weave.domain.workspace.dto.UpdateWorkspaceRequestDto;
@@ -8,6 +10,7 @@ import com.weave.domain.workspace.dto.WorkspaceResponseDto;
 import com.weave.domain.workspace.dto.WorkspaceScheduleResponseDto;
 import com.weave.domain.workspace.service.WorkspaceService;
 import com.weave.global.dto.ApiResponse;
+import java.util.List;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,6 +35,7 @@ public class WorkspaceController {
 
   private final WorkspaceService workspaceService;
   private final AuthService authService;
+  private final SchedulePhotoService schedulePhotoService;
 
   // 워크스페이스 생성
   @SecurityRequirement(name = "JWT")
@@ -154,6 +158,15 @@ public class WorkspaceController {
       @AuthenticationPrincipal UserDetails userDetails) {
     workspaceService.kickMember(id, userId, userDetails.getUsername());
     return ApiResponse.ok(null);
+  }
+
+  // 워크스페이스 갤러리 조회
+  @SecurityRequirement(name = "JWT")
+  @Tag(name = "WORKSPACE")
+  @Operation(summary = "워크스페이스 갤러리 조회", description = "워크스페이스의 모든 스케줄 사진을 조회합니다.")
+  @GetMapping("/{id}/gallery")
+  public ApiResponse<List<GalleryPhotoDto>> getGallery(@PathVariable("id") String id) {
+    return ApiResponse.ok(schedulePhotoService.getGalleryPhotos(id));
   }
 
 }

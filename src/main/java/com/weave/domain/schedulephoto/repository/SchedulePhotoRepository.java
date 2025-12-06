@@ -12,4 +12,6 @@ public interface SchedulePhotoRepository extends MongoRepository<SchedulePhoto, 
   List<SchedulePhoto> findByScheduleIdOrderByUploadedAtDesc(ObjectId scheduleId);
 
   void deleteByScheduleId(ObjectId scheduleId);
+
+  List<SchedulePhoto> findByScheduleIdInOrderByUploadedAtDesc(List<ObjectId> scheduleIds);
 }
