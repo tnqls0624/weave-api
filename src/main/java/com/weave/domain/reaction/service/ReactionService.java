@@ -1,5 +1,7 @@
 package com.weave.domain.reaction.service;
 
+import com.weave.domain.comment.entity.Comment;
+import com.weave.domain.comment.repository.CommentRepository;
 import com.weave.domain.reaction.dto.ReactionResponseDto;
 import com.weave.domain.reaction.dto.ReactionResponseDto.ReactedUserDto;
 import com.weave.domain.reaction.dto.ReactionSummaryDto;
@@ -7,6 +9,7 @@ import com.weave.domain.reaction.entity.CommentReaction;
 import com.weave.domain.reaction.entity.ScheduleReaction;
 import com.weave.domain.reaction.repository.CommentReactionRepository;
 import com.weave.domain.reaction.repository.ScheduleReactionRepository;
+import com.weave.domain.schedule.service.NotificationService;
 import com.weave.domain.user.entity.User;
 import com.weave.domain.user.repository.UserRepository;
 import java.util.ArrayList;
@@ -28,7 +31,9 @@ public class ReactionService {
 
   private final ScheduleReactionRepository scheduleReactionRepository;
   private final CommentReactionRepository commentReactionRepository;
+  private final CommentRepository commentRepository;
   private final UserRepository userRepository;
+  private final NotificationService notificationService;
 
   // 허용된 이모지 목록
   private static final List<String> ALLOWED_EMOJIS = Arrays.asList("👍", "❤️", "🎉", "👀", "🙏", "😢");
@@ -132,26 +137,64 @@ public class ReactionService {
 
   @Transactional
   public long toggleCommentReaction(String commentId, String emoji, String email) {
-    User user = userRepository.findByEmail(email)
+    User reactor = userRepository.findByEmail(email)
         .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 
     ObjectId commentObjectId = new ObjectId(commentId);
 
     Optional<CommentReaction> existing = commentReactionRepository
-        .findByCommentIdAndUserIdAndEmoji(commentObjectId, user.getId(), emoji);
+        .findByCommentIdAndUserIdAndEmoji(commentObjectId, reactor.getId(), emoji);
 
     if (existing.isPresent()) {
+      // 리액션 제거 (토글 off) - 알림 안 보냄
       commentReactionRepository.delete(existing.get());
     } else {
+      // 리액션 추가 (토글 on) - 알림 보냄
       CommentReaction reaction = CommentReaction.builder()
           .commentId(commentObjectId)
-          .userId(user.getId())
+          .userId(reactor.getId())
           .emoji(emoji)
           .build();
       commentReactionRepository.save(reaction);
+
+      // 댓글 작성자에게 FCM 알림 전송
+      sendReactionNotification(commentObjectId, reactor, emoji);
     }
 
     return commentReactionRepository.countByCommentIdAndEmoji(commentObjectId, emoji);
+  }
+
+  /**
+   * 댓글 리액션 알림 전송
+   */
+  private void sendReactionNotification(ObjectId commentId, User reactor, String emoji) {
+    try {
+      Comment comment = commentRepository.findById(commentId).orElse(null);
+      if (comment == null) {
+        log.warn("Comment not found for reaction notification: {}", commentId);
+        return;
+      }
+
+      // 댓글 작성자 조회
+      User commentAuthor = userRepository.findById(comment.getAuthorId()).orElse(null);
+      if (commentAuthor == null) {
+        log.warn("Comment author not found: {}", comment.getAuthorId());
+        return;
+      }
+
+      // 자기 자신의 댓글에 리액션한 경우 알림 안 보냄
+      if (commentAuthor.getId().equals(reactor.getId())) {
+        return;
+      }
+
+      String title = "댓글에 반응이 달렸어요";
+      String body = String.format("%s님이 회원님의 댓글에 %s 반응을 남겼어요", reactor.getName(), emoji);
+
+      notificationService.sendPushNotification(commentAuthor, title, body);
+      log.info("Sent reaction notification to user {} for comment {}", commentAuthor.getId(), commentId);
+    } catch (Exception e) {
+      log.error("Failed to send reaction notification for comment {}: {}", commentId, e.getMessage());
+    }
   }
 
   @Transactional(readOnly = true)
