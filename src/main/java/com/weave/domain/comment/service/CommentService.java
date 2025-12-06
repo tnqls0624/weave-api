@@ -177,7 +177,7 @@ public class CommentService {
     return CommentResponseDto.from(saved, author.getName(), author.getAvatarUrl());
   }
 
-  // 댓글 알림 발송
+  // 댓글 알림 발송 (한 사람에게 1번만 알림)
   private void sendCommentNotifications(Comment comment, User author, String scheduleId, ObjectId parentId) {
     try {
       Schedule schedule = scheduleRepository.findById(new ObjectId(scheduleId)).orElse(null);
@@ -185,10 +185,13 @@ public class CommentService {
 
       String scheduleTitle = schedule.getTitle();
 
-      // 1. 멘션 알림
+      // 이미 알림을 보낸 사용자 ID 추적 (중복 방지)
+      java.util.Set<ObjectId> notifiedUsers = new java.util.HashSet<>();
+
+      // 1. 멘션 알림 (최우선)
       if (comment.getMentions() != null && !comment.getMentions().isEmpty()) {
         for (ObjectId mentionedUserId : comment.getMentions()) {
-          if (!mentionedUserId.equals(author.getId())) {
+          if (!mentionedUserId.equals(author.getId()) && !notifiedUsers.contains(mentionedUserId)) {
             User mentionedUser = userRepository.findById(mentionedUserId).orElse(null);
             if (mentionedUser != null && mentionedUser.getFcmToken() != null) {
               notificationService.sendPushNotification(
@@ -196,15 +199,17 @@ public class CommentService {
                   "[" + scheduleTitle + "] " + author.getName() + "님이 회원님을 언급했습니다",
                   comment.getContent()
               );
+              notifiedUsers.add(mentionedUserId);
             }
           }
         }
       }
 
-      // 2. 답글 알림 (원댓글 작성자에게)
+      // 2. 답글 알림 (원댓글 작성자에게 - 멘션으로 이미 알림받지 않은 경우만)
       if (parentId != null) {
         Comment parentComment = commentRepository.findById(parentId).orElse(null);
-        if (parentComment != null && !parentComment.getAuthorId().equals(author.getId())) {
+        if (parentComment != null && !parentComment.getAuthorId().equals(author.getId())
+            && !notifiedUsers.contains(parentComment.getAuthorId())) {
           User parentAuthor = userRepository.findById(parentComment.getAuthorId()).orElse(null);
           if (parentAuthor != null && parentAuthor.getFcmToken() != null) {
             notificationService.sendPushNotification(
@@ -212,14 +217,15 @@ public class CommentService {
                 "[" + scheduleTitle + "] " + author.getName() + "님이 답글을 남겼습니다",
                 comment.getContent()
             );
+            notifiedUsers.add(parentComment.getAuthorId());
           }
         }
       }
 
-      // 3. 일정 생성자에게 새 댓글 알림 (답글이 아닌 경우)
+      // 3. 일정 생성자에게 새 댓글 알림 (답글이 아니고, 아직 알림받지 않은 경우만)
       if (parentId == null && schedule.getParticipants() != null && !schedule.getParticipants().isEmpty()) {
-        ObjectId creatorId = schedule.getParticipants().get(0); // 첫 번째 참여자를 생성자로 간주
-        if (!creatorId.equals(author.getId())) {
+        ObjectId creatorId = schedule.getParticipants().get(0);
+        if (!creatorId.equals(author.getId()) && !notifiedUsers.contains(creatorId)) {
           User creator = userRepository.findById(creatorId).orElse(null);
           if (creator != null && creator.getFcmToken() != null) {
             notificationService.sendPushNotification(
