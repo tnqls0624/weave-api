@@ -1,6 +1,7 @@
 package com.weave.domain.schedule.controller;
 
 import com.weave.domain.schedule.dto.CreateRequestScheduleDto;
+import com.weave.domain.schedule.dto.ScheduleCountsDto;
 import com.weave.domain.schedule.dto.ScheduleResponseDto;
 import com.weave.domain.schedule.dto.UpdateRequestScheduleDto;
 import com.weave.domain.schedule.service.ScheduleService;
@@ -66,5 +67,14 @@ public class ScheduleController {
   @DeleteMapping("/{id}")
   public ApiResponse<ScheduleResponseDto> delete(@PathVariable String id) {
     return ApiResponse.ok(scheduleService.delete(id));
+  }
+
+  // 스케줄 카운트 조회 (댓글 수, 사진 수)
+  @SecurityRequirement(name = "JWT")
+  @Tag(name = "Schedule")
+  @Operation(summary = "스케줄 카운트 조회 (댓글 수, 사진 수)")
+  @GetMapping("/{id}/counts")
+  public ApiResponse<ScheduleCountsDto> getCounts(@PathVariable String id) {
+    return ApiResponse.ok(scheduleService.getCounts(id));
   }
 }

@@ -3,13 +3,16 @@ package com.weave.domain.schedule.service;
 import com.google.common.collect.ImmutableList;
 import com.weave.domain.checklist.dto.ChecklistItemDto;
 import com.weave.domain.checklist.service.ChecklistService;
+import com.weave.domain.comment.repository.CommentRepository;
 import com.weave.domain.locationreminder.dto.LocationReminderDto;
 import com.weave.domain.locationreminder.service.LocationReminderService;
 import com.weave.domain.schedule.dto.CreateRequestScheduleDto;
+import com.weave.domain.schedule.dto.ScheduleCountsDto;
 import com.weave.domain.schedule.dto.ScheduleResponseDto;
 import com.weave.domain.schedule.dto.UpdateRequestScheduleDto;
 import com.weave.domain.schedule.entity.Schedule;
 import com.weave.domain.schedule.repository.ScheduleRepository;
+import com.weave.domain.schedulephoto.repository.SchedulePhotoRepository;
 import com.weave.domain.user.entity.User;
 import com.weave.domain.user.repository.UserRepository;
 import com.weave.domain.workspace.entity.Workspace;
@@ -34,6 +37,8 @@ public class ScheduleService {
   private final ScheduleNotificationService scheduleNotificationService;
   private final LocationReminderService locationReminderService;
   private final ChecklistService checklistService;
+  private final CommentRepository commentRepository;
+  private final SchedulePhotoRepository schedulePhotoRepository;
 
   public ScheduleResponseDto create(CreateRequestScheduleDto dto, String creatorEmail) {
     log.info("create schedule: {}", dto);
@@ -144,5 +149,22 @@ public class ScheduleService {
     List<ChecklistItemDto> checklist = checklistService.getChecklist(id);
 
     return ScheduleResponseDto.from(schedule, locationReminder, checklist);
+  }
+
+  public ScheduleCountsDto getCounts(String id) {
+    ObjectId scheduleId = new ObjectId(id);
+
+    // 스케줄 존재 확인
+    if (!scheduleRepository.existsById(scheduleId)) {
+      throw new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND);
+    }
+
+    long commentCount = commentRepository.countByScheduleId(scheduleId);
+    long photoCount = schedulePhotoRepository.countByScheduleId(scheduleId);
+
+    return ScheduleCountsDto.builder()
+        .commentCount(commentCount)
+        .photoCount(photoCount)
+        .build();
   }
 }
