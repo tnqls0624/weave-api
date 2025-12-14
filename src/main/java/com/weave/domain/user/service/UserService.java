@@ -35,8 +35,14 @@ public class UserService {
   }
 
   public UserResponseDto updateNotification(UpdateNotificationRequestDto dto, String email) {
-    User user = userRepository.findByEmailAndDeletedFalse(email)
+    User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
+
+    // 소프트 삭제된 사용자인 경우 재활성화
+    if (Boolean.TRUE.equals(user.getDeleted())) {
+      user.setDeleted(false);
+      user.setDeletedAt(null);
+    }
 
     log.info("📱 [Notification Update] email: {}, request: pushEnabled={}, fcmToken={}, locationEnabled={}",
         email, dto.getPushEnabled(), dto.getFcmToken() != null ? "exists" : "null", dto.getLocationEnabled());
@@ -64,8 +70,14 @@ public class UserService {
 
   // 개인 정보 수정 (dto에 값이 담긴 항목만 업데이트)
   public UserResponseDto update(UpdateUserRequestDto dto, String email) {
-    User user = userRepository.findByEmailAndDeletedFalse(email)
+    User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+    // 소프트 삭제된 사용자인 경우 재활성화
+    if (Boolean.TRUE.equals(user.getDeleted())) {
+      user.setDeleted(false);
+      user.setDeletedAt(null);
+    }
 
     if (dto.getName() != null) {
       user.setName(dto.getName());
@@ -89,8 +101,16 @@ public class UserService {
   }
 
   public UserResponseDto findByEmail(String email) {
-    User user = userRepository.findByEmailAndDeletedFalse(email)
+    User user = userRepository.findByEmail(email)
         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+    // 소프트 삭제된 사용자인 경우 재활성화
+    if (Boolean.TRUE.equals(user.getDeleted())) {
+      user.setDeleted(false);
+      user.setDeletedAt(null);
+      userRepository.save(user);
+    }
+
     return UserResponseDto.from(user);
   }
 
