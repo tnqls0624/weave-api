@@ -60,7 +60,7 @@ public class AuthService {
 
   // 이메일 로그인
   public LoginResponseDto login(LoginRequestDto dto) {
-    User user = authRepository.findByEmail(dto.getEmail())
+    User user = authRepository.findByEmailAndDeletedFalse(dto.getEmail())
         .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_LOGIN));
 
     if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
@@ -161,7 +161,7 @@ public class AuthService {
           "카카오 계정의 이메일을 가져올 수 없습니다. 카카오 앱 설정에서 이메일 동의항목을 확인해주세요.");
     }
 
-    return authRepository.findByEmail(email)
+    return authRepository.findByEmailAndDeletedFalse(email)
         .orElseGet(() -> {
             // 신규 사용자 생성
             User newUser = authRepository.save(
@@ -311,7 +311,7 @@ public class AuthService {
       }
 
       String finalEmail = email;
-      return authRepository.findByEmail(email)
+      return authRepository.findByEmailAndDeletedFalse(email)
           .orElseGet(() -> {
               // 신규 사용자 생성
               User newUser = authRepository.save(

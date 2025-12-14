@@ -14,4 +14,11 @@ public interface UserRepository extends MongoRepository<User, ObjectId> {
   Optional<User> findByEmail(String email);
 
   Optional<User> findByInviteCode(String inviteCode);
+
+  // 삭제되지 않은 사용자만 조회
+  Optional<User> findByEmailAndDeletedFalse(String email);
+
+  Optional<User> findByInviteCodeAndDeletedFalse(String inviteCode);
+
+  boolean existsByInviteCodeAndDeletedFalse(String inviteCode);
 }

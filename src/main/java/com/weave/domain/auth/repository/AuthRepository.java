@@ -10,5 +10,8 @@ import org.springframework.stereotype.Repository;
 public interface AuthRepository extends MongoRepository<User, ObjectId> {
 
   Optional<User> findByEmail(String email);
+
+  // 삭제되지 않은 사용자만 조회
+  Optional<User> findByEmailAndDeletedFalse(String email);
 }
 

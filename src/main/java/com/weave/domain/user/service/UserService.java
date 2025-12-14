@@ -12,6 +12,7 @@ import com.weave.domain.workspace.entity.Workspace;
 import com.weave.domain.workspace.repository.WorkspaceRepository;
 import com.weave.global.BusinessException;
 import com.weave.global.ErrorCode;
+import java.util.Date;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,7 @@ public class UserService {
   }
 
   public UserResponseDto updateNotification(UpdateNotificationRequestDto dto, String email) {
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndDeletedFalse(email)
         .orElseThrow(() -> new IllegalArgumentException("User not found: " + email));
 
     log.info("📱 [Notification Update] email: {}, request: pushEnabled={}, fcmToken={}, locationEnabled={}",
@@ -63,7 +64,7 @@ public class UserService {
 
   // 개인 정보 수정 (dto에 값이 담긴 항목만 업데이트)
   public UserResponseDto update(UpdateUserRequestDto dto, String email) {
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndDeletedFalse(email)
         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
     if (dto.getName() != null) {
@@ -88,63 +89,67 @@ public class UserService {
   }
 
   public UserResponseDto findByEmail(String email) {
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndDeletedFalse(email)
         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     return UserResponseDto.from(user);
   }
 
   /**
-   * 회원 탈퇴 - 사용자 및 관련 데이터 삭제 1. 워크스페이스에서 사용자 제거 (master인 경우 워크스페이스 삭제) 2. 일정에서 참여자 제거 (혼자인 일정은 삭제)
-   * 3. 위치 정보 삭제 4. 사용자 삭제
+   * 회원 탈퇴 (소프트 삭제) - 데이터는 보존하고 삭제 표시만 함
+   * 1. 워크스페이스에서 사용자 제거 (master인 경우에도 워크스페이스 유지, 멤버가 있으면 첫번째 멤버가 master)
+   * 2. 일정에서 참여자 제거
+   * 3. 위치 정보 삭제
+   * 4. 사용자 소프트 삭제 (deleted=true, deletedAt 설정)
    */
   @Transactional
   public void deleteByEmail(String email) {
-    User user = userRepository.findByEmail(email)
+    User user = userRepository.findByEmailAndDeletedFalse(email)
         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
     ObjectId userId = user.getId();
-    log.info("회원 탈퇴 시작 - userId: {}, email: {}", userId, email);
+    log.info("회원 탈퇴 시작 (소프트 삭제) - userId: {}, email: {}", userId, email);
 
     // 1. 워크스페이스 처리
     List<Workspace> workspaces = workspaceRepository.findByUsersContaining(userId);
     for (Workspace workspace : workspaces) {
+      workspace.getUsers().remove(userId);
+
       if (workspace.getMaster().equals(userId)) {
-        // master인 경우: 워크스페이스 삭제
-        log.info("워크스페이스 삭제 (master) - workspaceId: {}", workspace.getId());
-        // 해당 워크스페이스의 모든 일정도 삭제
-        List<Schedule> workspaceSchedules = scheduleRepository.findByWorkspace(workspace.getId());
-        scheduleRepository.deleteAll(workspaceSchedules);
-        workspaceRepository.delete(workspace);
-      } else {
-        // 멤버인 경우: 워크스페이스에서 사용자 제거
-        log.info("워크스페이스에서 사용자 제거 - workspaceId: {}", workspace.getId());
-        workspace.getUsers().remove(userId);
-        // participantColors에서도 제거
-        if (workspace.getParticipantColors() != null) {
-          workspace.getParticipantColors().remove(userId.toString());
+        // master인 경우: 다른 멤버가 있으면 첫번째 멤버를 master로 변경
+        if (!workspace.getUsers().isEmpty()) {
+          ObjectId newMaster = workspace.getUsers().get(0);
+          workspace.setMaster(newMaster);
+          log.info("워크스페이스 master 변경 - workspaceId: {}, newMaster: {}", workspace.getId(), newMaster);
         }
-        workspaceRepository.save(workspace);
+        // 멤버가 없으면 워크스페이스는 유지하되 사용자만 제거됨
       }
+
+      // participantColors에서 제거
+      if (workspace.getParticipantColors() != null) {
+        workspace.getParticipantColors().remove(userId.toString());
+      }
+
+      log.info("워크스페이스에서 사용자 제거 - workspaceId: {}", workspace.getId());
+      workspaceRepository.save(workspace);
     }
 
     // 2. 일정에서 참여자 제거
     List<Schedule> schedules = scheduleRepository.findByParticipantsContaining(userId);
     for (Schedule schedule : schedules) {
       schedule.getParticipants().remove(userId);
-      if (schedule.getParticipants().isEmpty()) {
-        // 참여자가 없으면 일정 삭제
-        log.info("일정 삭제 (참여자 없음) - scheduleId: {}", schedule.getId());
-        scheduleRepository.delete(schedule);
-      } else {
-        scheduleRepository.save(schedule);
-      }
+      // 참여자가 없어도 일정은 삭제하지 않음 (데이터 보존)
+      scheduleRepository.save(schedule);
+      log.info("일정에서 참여자 제거 - scheduleId: {}", schedule.getId());
     }
 
-    // 3. 위치 정보 삭제
+    // 3. 위치 정보 삭제 (실시간 위치 데이터는 삭제해도 됨)
     locationRepository.deleteByUserId(userId);
 
-    // 4. 사용자 삭제
-    userRepository.delete(user);
-    log.info("회원 탈퇴 완료 - userId: {}, email: {}", userId, email);
+    // 4. 사용자 소프트 삭제
+    user.setDeleted(true);
+    user.setDeletedAt(new Date());
+    userRepository.save(user);
+
+    log.info("회원 탈퇴 완료 (소프트 삭제) - userId: {}, email: {}, deletedAt: {}", userId, email, user.getDeletedAt());
   }
 }

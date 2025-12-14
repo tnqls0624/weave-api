@@ -79,4 +79,11 @@ public class User {
 
   @LastModifiedDate
   private Date updatedAt;
+
+  @Field("deleted")
+  @Builder.Default
+  private Boolean deleted = false;
+
+  @Field("deleted_at")
+  private Date deletedAt;
 }
