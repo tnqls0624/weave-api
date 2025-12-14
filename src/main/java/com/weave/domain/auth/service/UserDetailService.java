@@ -18,8 +18,15 @@ public class UserDetailService implements UserDetailsService {
 
   @Override
   public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-    User user = authRepository.findByEmailAndDeletedFalse(email)
+    User user = authRepository.findByEmail(email)
         .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+
+    // 소프트 삭제된 사용자인 경우 재활성화
+    if (Boolean.TRUE.equals(user.getDeleted())) {
+      user.setDeleted(false);
+      user.setDeletedAt(null);
+      authRepository.save(user);
+    }
 
     return new org.springframework.security.core.userdetails.User(
         user.getEmail(),
