@@ -161,7 +161,17 @@ public class AuthService {
           "카카오 계정의 이메일을 가져올 수 없습니다. 카카오 앱 설정에서 이메일 동의항목을 확인해주세요.");
     }
 
-    return authRepository.findByEmailAndDeletedFalse(email)
+    return authRepository.findByEmail(email)
+        .map(user -> {
+            // 기존 사용자가 소프트 삭제된 경우 재활성화
+            if (Boolean.TRUE.equals(user.getDeleted())) {
+                user.setDeleted(false);
+                user.setDeletedAt(null);
+                authRepository.save(user);
+                log.info("Reactivated soft-deleted user: {}", user.getEmail());
+            }
+            return user;
+        })
         .orElseGet(() -> {
             // 신규 사용자 생성
             User newUser = authRepository.save(
@@ -311,7 +321,17 @@ public class AuthService {
       }
 
       String finalEmail = email;
-      return authRepository.findByEmailAndDeletedFalse(email)
+      return authRepository.findByEmail(email)
+          .map(user -> {
+              // 기존 사용자가 소프트 삭제된 경우 재활성화
+              if (Boolean.TRUE.equals(user.getDeleted())) {
+                  user.setDeleted(false);
+                  user.setDeletedAt(null);
+                  authRepository.save(user);
+                  log.info("Reactivated soft-deleted user: {}", user.getEmail());
+              }
+              return user;
+          })
           .orElseGet(() -> {
               // 신규 사용자 생성
               User newUser = authRepository.save(
