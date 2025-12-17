@@ -20,6 +20,7 @@ import com.weave.domain.workspace.entity.Workspace;
 import com.weave.domain.workspace.repository.WorkspaceRepository;
 import com.weave.global.BusinessException;
 import com.weave.global.ErrorCode;
+import com.weave.global.service.DiscordNotificationService;
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.PublicKey;
@@ -51,6 +52,7 @@ public class AuthService {
   private final RefreshTokenRepository refreshTokenRepository;
   private final ObjectMapper objectMapper;
   private final WorkspaceRepository workspaceRepository;
+  private final DiscordNotificationService discordNotificationService;
 
   @Value("${app.test-account.email:test@weave.com}")
   private String testAccountEmail;
@@ -187,6 +189,9 @@ public class AuthService {
             // 신규 사용자를 위한 기본 워크스페이스 생성
             createDefaultWorkspace(newUser);
             log.info("Created default workspace for new user: {}", newUser.getEmail());
+
+            // Discord 알림 전송
+            discordNotificationService.sendNewUserNotification(newUser);
 
             return newUser;
         });
@@ -347,6 +352,9 @@ public class AuthService {
               // 신규 사용자를 위한 기본 워크스페이스 생성
               createDefaultWorkspace(newUser);
               log.info("Created default workspace for new user: {}", newUser.getEmail());
+
+              // Discord 알림 전송
+              discordNotificationService.sendNewUserNotification(newUser);
 
               return newUser;
           });
